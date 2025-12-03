@@ -7,14 +7,29 @@ import (
 	"git-gemini-reviewer-go/internal/config"
 	"log/slog"
 	"os"
+	"time"
 
 	"github.com/shouni/go-cli-base"
+	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 )
 
 // ReviewConfig は、レビュー実行のパラメータです
 var ReviewConfig config.ReviewConfig
+
+const defaultHTTPTimeout = 30 * time.Second
+
+// clientKey は context.Context に httpkit.Client を格納・取得するための非公開キー
+type clientKey struct{}
+
+// GetHTTPClient は、cmd.Context() から *httpkit.Client を取り出す公開関数です。
+func GetHTTPClient(ctx context.Context) (*httpkit.Client, error) {
+	if client, ok := ctx.Value(clientKey{}).(*httpkit.Client); ok {
+		return client, nil
+	}
+	return nil, fmt.Errorf("contextからhttpkit.Clientを取得できませんでした。rootコマンドの初期化を確認してください。")
+}
 
 // initAppPreRunE は、アプリケーション固有のPersistentPreRunEです。
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
@@ -25,10 +40,18 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 		logLevel = slog.LevelDebug
 	}
 
-	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{
+	handler := slog.NewTextHandler(os.Stderr, &slog.HandlerOptions{ // 標準エラー出力にログを出すのが一般的
 		Level: logLevel,
 	})
 	slog.SetDefault(slog.New(handler))
+
+	// 2. HTTPクライアントの初期化
+	httpClient := httpkit.New(defaultHTTPTimeout)
+
+	// コマンドのコンテキストに HTTP Client を格納
+	ctx := context.WithValue(cmd.Context(), clientKey{}, httpClient)
+	cmd.SetContext(ctx)
+
 	slog.Info("アプリケーション設定初期化完了", slog.String("mode", ReviewConfig.ReviewMode))
 
 	return nil

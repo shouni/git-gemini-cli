@@ -10,7 +10,6 @@ import (
 	"time"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
-	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-notifier/pkg/factory"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
@@ -18,8 +17,6 @@ import (
 
 	"github.com/spf13/cobra"
 )
-
-const defaultHTTPTimeout = 30 * time.Second
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
 type PublishFlags struct {
@@ -187,7 +184,11 @@ func sendSlackNotification(ctx context.Context, publicURL string, cfg config.Rev
 	)
 
 	// 4. HTTP Clientの取得
-	httpClient := httpkit.New(defaultHTTPTimeout)
+	httpClient, err := GetHTTPClient(ctx)
+	if err != nil {
+		slog.Error("🚨 HTTP Clientの取得に失敗しました", "error", err)
+		return fmt.Errorf("HTTP Clientの取得に失敗しました: %w", err) // エラーを返す
+	}
 
 	// 5. Slackクライアントの初期化
 	slackClient, err := factory.GetSlackClient(httpClient)
