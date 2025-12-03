@@ -10,6 +10,8 @@ import (
 	"strings"
 	"time"
 
+	"git-gemini-reviewer-go/internal/pipeline"
+
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 	"github.com/shouni/go-notifier/pkg/factory"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
@@ -62,7 +64,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	targetURI := publishFlags.URI
 
 	// 1. レビューパイプラインを実行 (ReviewConfigを渡す)
-	reviewResult, err := executeReviewPipeline(ctx, ReviewConfig)
+	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
 	if err != nil {
 		return err
 	}

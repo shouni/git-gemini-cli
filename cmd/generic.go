@@ -4,6 +4,8 @@ import (
 	"fmt"
 	"log/slog"
 
+	"git-gemini-reviewer-go/internal/pipeline"
+
 	"github.com/spf13/cobra"
 )
 
@@ -15,7 +17,7 @@ var genericCmd = &cobra.Command{
 	RunE: func(cmd *cobra.Command, args []string) error {
 
 		// 1. パイプラインを実行し、結果を受け取る
-		reviewResult, err := executeReviewPipeline(cmd.Context(), ReviewConfig)
+		reviewResult, err := pipeline.ExecuteReviewPipeline(cmd.Context(), ReviewConfig)
 		if err != nil {
 			return err
 		}
