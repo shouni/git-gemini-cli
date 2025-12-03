@@ -50,6 +50,7 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	targetURI := publishFlags.URI
+	urlSigner := publishFlags.URI
 
 	// 1. レビューパイプラインを実行 (ReviewConfigを渡す)
 	reviewResult, err := executeReviewPipeline(ctx, ReviewConfig)
@@ -124,7 +125,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 
 	// --- 4. Slack通知 ---
 	// ロジックを分離した関数へ委譲
-	if err := sendSlackNotification(ctx, targetURI, ReviewConfig); err != nil {
+	if err := sendSlackNotification(ctx, urlSigner, ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
 	}
