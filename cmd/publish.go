@@ -113,9 +113,30 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", publishFlags.URI)
 
 	// --- 4. Slack通知 ---
-	// publicURL を初期化し、署名付きURLが生成された場合に値を更新する。
-	publicURL := targetURI
+	if err := sendSlackNotification(ctx, registry, targetURI, ReviewConfig); err != nil {
+		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
+		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
+	}
 
+	return nil
+}
+
+// --------------------------------------------------------------------------
+// プライベート関数 (ロジック分離)
+// --------------------------------------------------------------------------
+
+// sendSlackNotification は Slack 通知を送信します。
+func sendSlackNotification(ctx context.Context, registry publisher.FactoryRegistry, targetURI string, cfg config.ReviewConfig) error {
+	// 1. Slack 認証情報の取得
+	slackAuthInfo := getSlackAuthInfo()
+
+	// Webhook URLが設定されていない場合はSlack通知をスキップ
+	if slackAuthInfo.WebhookURL == "" {
+		slog.Info("SLACK_WEBHOOK_URL が設定されていません。Slack通知をスキップします。")
+		return nil
+	}
+
+	publicURL := targetURI
 	// GCSクライアントの直接初期化を削除し、Factory経由でURLSignerを取得
 	if remoteio.IsGCSURI(targetURI) {
 		urlSigner, err := registry.GCSFactory.NewGCSURLSigner()
@@ -144,43 +165,19 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		publicURL = convertS3URIToPublicURL(targetURI, defaultAWSRegion)
 	}
 
-	if err := sendSlackNotification(ctx, publicURL, ReviewConfig); err != nil {
-		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
-		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
-	}
-
-	return nil
-}
-
-// --------------------------------------------------------------------------
-// プライベート関数 (ロジック分離)
-// --------------------------------------------------------------------------
-
-// sendSlackNotification は Slack 通知を送信します。
-func sendSlackNotification(ctx context.Context, publicURL string, cfg config.ReviewConfig) error {
-	// 1. Slack 認証情報の取得
-	slackAuthInfo := getSlackAuthInfo()
-
-	// Webhook URLが設定されていない場合はSlack通知をスキップ
-	if slackAuthInfo.WebhookURL == "" {
-		slog.Info("SLACK_WEBHOOK_URL が設定されていません。Slack通知をスキップします。")
-		return nil
-	}
-
 	// リポジトリ名を抽出
 	repoPath := getRepositoryPath(cfg.RepoURL)
 
 	// 3. Slack に投稿するメッセージを作成
 	title := "✅ AIコードレビュー結果がアップロードされました。"
-	content := fmt.Sprintf(`
-**詳細URL:** <%s|%s>
-**リポジトリ:** %s
-**ブランチ:** %s ← %s
-**モード:** %s
-**モデル:** %s
-`,
+	content := fmt.Sprintf(
+		"**詳細URL:** <%s|%s>\n"+
+			"**リポジトリ:** `%s`\n"+
+			"**ブランチ:** `%s` ← `%s`\n"+
+			"**モード:** `%s`\n"+
+			"**モデル:** `%s`",
 		publicURL,
-		publicURL,
+		targetURI,
 		repoPath,
 		cfg.BaseBranch,
 		cfg.FeatureBranch,
@@ -207,7 +204,7 @@ func sendSlackNotification(ctx context.Context, publicURL string, cfg config.Rev
 		return fmt.Errorf("Slackへの結果URL投稿に失敗しました: %w", err)
 	}
 
-	slog.Info("レビュー結果のURLを Slack に投稿しました。", "uri", publicURL)
+	slog.Info("レビュー結果のURLを Slack に投稿しました。", "uri", targetURI)
 	return nil
 }
 
@@ -219,9 +216,6 @@ func sendSlackNotification(ctx context.Context, publicURL string, cfg config.Rev
 func getSlackAuthInfo() slackAuthInfo {
 	return slackAuthInfo{
 		WebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
-		Username:   os.Getenv("SLACK_USERNAME"),
-		IconEmoji:  os.Getenv("SLACK_ICON_EMOJI"),
-		Channel:    os.Getenv("SLACK_CHANNEL"),
 	}
 }
 
@@ -263,7 +257,5 @@ func convertS3URIToPublicURL(s3URI, region string) string {
 		objectKey = parts[1]
 	}
 
-	// 公開URL形式に再構成 (Virtual-Hosted Style Access)
-	publicURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, objectKey)
-	return publicURL
+	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, objectKey)
 }
