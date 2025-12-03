@@ -208,23 +208,14 @@ func sendSlackNotification(ctx context.Context, publicURL string, cfg config.Rev
 // ヘルパー関数
 // --------------------------------------------------------------------------
 
-// convertS3URIToPublicURL は S3 URI を AWS の公開 Path-Style アクセス URL に変換します。
-func convertS3URIToPublicURL(s3URI, region string) string {
-	processedURI := strings.TrimPrefix(s3URI, "s3://")
-
-	// 最初の "/" でバケット名とオブジェクトキーに分割
-	parts := strings.SplitN(processedURI, "/", 2)
-	bucketName := parts[0]
-	objectKey := "/"
-
-	if len(parts) > 1 {
-		objectKey = "/" + parts[1]
+// getSlackAuthInfo は、環境変数から Slack 認証情報を取得します。
+func getSlackAuthInfo() slackAuthInfo {
+	return slackAuthInfo{
+		WebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
+		Username:   os.Getenv("SLACK_USERNAME"),
+		IconEmoji:  os.Getenv("SLACK_ICON_EMOJI"),
+		Channel:    os.Getenv("SLACK_CHANNEL"),
 	}
-
-	// 公開URL形式に再構成 (Path-Style Access)
-	// 形式: https://s3.{region}.amazonaws.com/{bucketName}{objectKey}
-	publicURL := fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
-	return publicURL
 }
 
 // getRepositoryPath はリポジトリURLから 'owner/repo-name' の形式のパスを抽出します。
@@ -260,12 +251,21 @@ func getRepositoryPath(repoURL string) string {
 	return s
 }
 
-// getSlackAuthInfo は、環境変数から Slack 認証情報を取得します。
-func getSlackAuthInfo() slackAuthInfo {
-	return slackAuthInfo{
-		WebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
-		Username:   os.Getenv("SLACK_USERNAME"),
-		IconEmoji:  os.Getenv("SLACK_ICON_EMOJI"),
-		Channel:    os.Getenv("SLACK_CHANNEL"),
+// convertS3URIToPublicURL は S3 URI を AWS の公開 Path-Style アクセス URL に変換します。
+func convertS3URIToPublicURL(s3URI, region string) string {
+	processedURI := strings.TrimPrefix(s3URI, "s3://")
+
+	// 最初の "/" でバケット名とオブジェクトキーに分割
+	parts := strings.SplitN(processedURI, "/", 2)
+	bucketName := parts[0]
+	objectKey := "/"
+
+	if len(parts) > 1 {
+		objectKey = "/" + parts[1]
 	}
+
+	// 公開URL形式に再構成 (Path-Style Access)
+	// 形式: https://s3.{region}.amazonaws.com/{bucketName}{objectKey}
+	publicURL := fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
+	return publicURL
 }
