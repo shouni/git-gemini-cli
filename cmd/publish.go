@@ -3,6 +3,7 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"time"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
@@ -69,6 +70,25 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("GCSクライアントファクトリの初期化に失敗しました: %w", err)
 		}
 		registry.GCSFactory = gcsFactory
+
+		// GCSクライアントの直接初期化を削除し、Factory経由でURLSignerを取得
+		urlSigner, err := gcsFactory.NewGCSURLSigner()
+		if err != nil {
+			slog.Error("URLSigner の取得に失敗", "error", err)
+		}
+
+		// 抽象化されたインターフェースを経由して署名付きURLを生成
+		signedURL, err := urlSigner.GenerateSignedURL(
+			ctx,
+			targetURI,
+			"GET",
+			15*time.Minute,
+		)
+		if err != nil {
+			slog.Error("署名付きURLの生成に失敗", "error", err)
+		}
+		slog.Error("URLSigner の取得に成功", "url", signedURL)
+
 	} else if remoteio.IsS3URI(targetURI) {
 		s3Factory, err := s3factory.NewS3ClientFactory(ctx)
 		if err != nil {
