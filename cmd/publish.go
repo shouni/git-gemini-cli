@@ -3,10 +3,11 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"git-gemini-reviewer-go/internal/config"
 	"log/slog"
 	"strings"
 	"time"
+
+	"git-gemini-reviewer-go/internal/config"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 	"github.com/shouni/go-notifier/pkg/factory"
