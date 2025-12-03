@@ -53,10 +53,10 @@
 git clone git@github.com:shouni/git-gemini-cli.git
 
 # 実行ファイルを bin/ ディレクトリに生成
-go build -o bin/gemini_reviewer
+go build -o bin/git_gemini_cli
 ```
 
-実行ファイルは、プロジェクトルートの `./bin/gemini_reviewer` に生成されます。
+実行ファイルは、プロジェクトルートの **`./bin/git_gemini_cli`** に生成されます。
 
 -----
 
@@ -128,7 +128,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ```bash
 # main と develop の差分をリリース判定モードで実行
-./bin/gemini_reviewer generic \
+./bin/git_gemini_cli generic \
   -m "release" \
   --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
   --base-branch "main" \
@@ -145,7 +145,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ```bash
 # feature/publish の差分をレビューし、GCSにHTML結果を保存
-./bin/gemini_reviewer publish \
+./bin/git_gemini_cli publish \
   -m "detail" \
   --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
   --base-branch "main" \
@@ -157,7 +157,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ```bash
 # feature/s3-save の差分をレビューし、S3にHTML結果を保存
-./bin/gemini_reviewer publish \
+./bin/git_gemini_cli publish \
   -m "release" \
   --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
   --base-branch "main" \
@@ -182,7 +182,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ```bash
 # bugfix/issue-456 の差分をレビューし、PROJECT-123 に投稿
-./bin/gemini_reviewer backlog \
+./bin/git_gemini_cli backlog \
   --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
   --base-branch "main" \
   --feature-branch "bugfix/issue-456" \
@@ -208,7 +208,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ```bash
 # feature/slack-notify の差分を詳細レビューモードで実行し、Slackに投稿
-./bin/gemini_reviewer slack \
+./bin/git_gemini_cli slack \
   -m "detail" \
   --repo-url "ssh://github.com/owner/repo-name.git" \
   --base-branch "main" \
