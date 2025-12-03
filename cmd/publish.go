@@ -144,7 +144,7 @@ func sendSlackNotification(ctx context.Context, registry publisher.FactoryRegist
 			slog.Error("URLSigner の取得に失敗", "error", err)
 			// エラーが発生した場合、publicURL は targetURI のままとなる。
 		} else {
-			const signedURLExpiration = 15 * time.Minute
+			const signedURLExpiration = 30 * time.Minute
 			signedURL, err := urlSigner.GenerateSignedURL(
 				ctx,
 				targetURI,
