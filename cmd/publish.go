@@ -78,16 +78,17 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		}
 
 		// 抽象化されたインターフェースを経由して署名付きURLを生成
+		const signedURLExpiration = 15 * time.Minute
 		signedURL, err := urlSigner.GenerateSignedURL(
 			ctx,
 			targetURI,
 			"GET",
-			15*time.Minute,
+			signedURLExpiration,
 		)
 		if err != nil {
 			slog.Error("署名付きURLの生成に失敗", "error", err)
 		}
-		slog.Error("URLSigner の取得に成功", "url", signedURL)
+		slog.Info("署名付きURLの生成に成功", "url", signedURL)
 
 	} else if remoteio.IsS3URI(targetURI) {
 		s3Factory, err := s3factory.NewS3ClientFactory(ctx)
