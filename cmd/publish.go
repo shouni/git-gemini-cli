@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"git-gemini-reviewer-go/internal/config"
 	"log/slog"
+	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -112,34 +113,37 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", publishFlags.URI)
 
 	// --- 4. Slack通知 ---
+	// publicURL を初期化し、署名付きURLが生成された場合に値を更新する。
 	publicURL := targetURI
+
 	// GCSクライアントの直接初期化を削除し、Factory経由でURLSignerを取得
 	if remoteio.IsGCSURI(targetURI) {
 		urlSigner, err := registry.GCSFactory.NewGCSURLSigner()
 		if err != nil {
 			slog.Error("URLSigner の取得に失敗", "error", err)
+			// エラーが発生した場合、publicURL は targetURI のままとなる。
+		} else {
+			const signedURLExpiration = 15 * time.Minute
+			signedURL, err := urlSigner.GenerateSignedURL(
+				ctx,
+				targetURI,
+				"GET",
+				signedURLExpiration,
+			)
+			if err != nil {
+				slog.Error("署名付きURLの生成に失敗", "error", err)
+				// エラーが発生した場合、publicURL は targetURI のままとなる。
+			} else {
+				publicURL = signedURL
+				slog.Info("署名付きURLの生成に成功", "url", publicURL)
+			}
 		}
-
-		// 抽象化されたインターフェースを経由して署名付きURLを生成
-		const signedURLExpiration = 15 * time.Minute
-		publicURL, err := urlSigner.GenerateSignedURL(
-			ctx,
-			targetURI,
-			"GET",
-			signedURLExpiration,
-		)
-		if err != nil {
-			slog.Error("署名付きURLの生成に失敗", "error", err)
-		}
-		slog.Info("署名付きURLの生成に成功", "url", publicURL)
-
 	} else if remoteio.IsS3URI(targetURI) {
 		const defaultAWSRegion = "ap-northeast-1"
 		// S3の公開URL形式に変換
 		publicURL = convertS3URIToPublicURL(targetURI, defaultAWSRegion)
 	}
 
-	// ロジックを分離した関数へ委譲
 	if err := sendSlackNotification(ctx, publicURL, ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
@@ -168,12 +172,13 @@ func sendSlackNotification(ctx context.Context, publicURL string, cfg config.Rev
 
 	// 3. Slack に投稿するメッセージを作成
 	title := "✅ AIコードレビュー結果がアップロードされました。"
-	content := fmt.Sprintf(
-		"**詳細URL:** <%s|%s>\n"+
-			"**リポジトリ:** `%s`\n"+
-			"**ブランチ:** `%s` ← `%s`\n"+
-			"**モード:** `%s`\n"+
-			"**モデル:** `%s`",
+	content := fmt.Sprintf(`
+**詳細URL:** <%s|%s>
+**リポジトリ:** %s
+**ブランチ:** %s ← %s
+**モード:** %s
+**モデル:** %s
+`,
 		publicURL,
 		publicURL,
 		repoPath,
@@ -182,12 +187,13 @@ func sendSlackNotification(ctx context.Context, publicURL string, cfg config.Rev
 		cfg.ReviewMode,
 		cfg.GeminiModel,
 	)
+	content = strings.TrimSpace(content)
 
 	// 4. HTTP Clientの取得
 	httpClient, err := GetHTTPClient(ctx)
 	if err != nil {
 		slog.Error("🚨 HTTP Clientの取得に失敗しました", "error", err)
-		return fmt.Errorf("HTTP Clientの取得に失敗しました: %w", err) // エラーを返す
+		return fmt.Errorf("HTTP Clientの取得に失敗しました: %w", err)
 	}
 
 	// 5. Slackクライアントの初期化
@@ -223,50 +229,41 @@ func getSlackAuthInfo() slackAuthInfo {
 func getRepositoryPath(repoURL string) string {
 	s := repoURL
 
-	// 1. プロトコルとプレフィックスの除去 (git@, https://, http://, ssh://)
-	s = strings.TrimPrefix(s, "https://")
-	s = strings.TrimPrefix(s, "http://")
-	s = strings.TrimPrefix(s, "git@")
-	s = strings.TrimPrefix(s, "ssh://")
-
-	// 2. Backlog/SSH形式: ホスト名とパスの区切り (:) を利用してパスを抽出
-	// 例: bbmf@bbmf.git.backlog.jp:/MK/TEST -> /MK/TEST
-	if idx := strings.Index(s, ":"); idx != -1 {
-		// ':' 以降の部分をパスとする
-		s = s[idx+1:]
-	} else {
-		// 3. HTTPS形式など、ホスト名とパスが '/' で区切られている形式に対応
-		// 例: github.com/owner/repo-name -> owner/repo-name
-		if idx := strings.Index(s, "/"); idx != -1 {
-			s = s[idx+1:]
+	// SSH形式 (git@host:owner/repo.git) を net/url でパース可能な形式に変換
+	if strings.HasPrefix(s, "git@") {
+		if idx := strings.Index(s, ":"); idx != -1 {
+			s = "ssh://" + s[:idx] + "/" + s[idx+1:] // ':' を '/' に置換
 		}
 	}
 
-	// 4. パスの先頭にある可能性のある '/' を完全に除去
-	// 上記 2. で抽出されたパスが "/MK/TEST" の場合に対応
-	s = strings.TrimPrefix(s, "/")
+	u, err := url.Parse(s)
+	if err != nil {
+		slog.Warn("リポジトリURLのパースに失敗しました。", "url", repoURL, "error", err)
+		return repoURL // パース失敗時は元のURLを返す
+	}
 
-	// 5. .git 拡張子を除去
-	s = strings.TrimSuffix(s, ".git")
+	// パス部分から先頭の '/' と末尾の '.git' を除去
+	path := strings.TrimPrefix(u.Path, "/")
+	path = strings.TrimSuffix(path, ".git")
 
-	return s
+	return path
 }
 
-// convertS3URIToPublicURL は S3 URI を AWS の公開 Path-Style アクセス URL に変換します。
+// convertS3URIToPublicURL は S3 URI を AWS の公開 Virtual-Hosted Style アクセス URL に変換します。
+// 形式: https://{bucketName}.s3.{region}.amazonaws.com/{objectKey}
 func convertS3URIToPublicURL(s3URI, region string) string {
 	processedURI := strings.TrimPrefix(s3URI, "s3://")
 
 	// 最初の "/" でバケット名とオブジェクトキーに分割
 	parts := strings.SplitN(processedURI, "/", 2)
 	bucketName := parts[0]
-	objectKey := "/"
+	objectKey := ""
 
 	if len(parts) > 1 {
-		objectKey = "/" + parts[1]
+		objectKey = parts[1]
 	}
 
-	// 公開URL形式に再構成 (Path-Style Access)
-	// 形式: https://s3.{region}.amazonaws.com/{bucketName}{objectKey}
-	publicURL := fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
+	// 公開URL形式に再構成 (Virtual-Hosted Style Access)
+	publicURL := fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, objectKey)
 	return publicURL
 }
