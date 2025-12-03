@@ -4,6 +4,7 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
+	"os"
 	"strings"
 	"time"
 
@@ -22,6 +23,14 @@ import (
 type PublishFlags struct {
 	URI         string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
 	ContentType string // 保存する際のMIMEタイプ
+}
+
+// slackAuthInfo は、Slack投稿に必要な認証情報と投稿情報をカプセル化します。
+type slackAuthInfo struct {
+	WebhookURL string
+	Username   string
+	IconEmoji  string
+	Channel    string
 }
 
 var publishFlags PublishFlags
@@ -255,4 +264,14 @@ func getRepositoryPath(repoURL string) string {
 	s = strings.TrimSuffix(s, ".git")
 
 	return s
+}
+
+// getSlackAuthInfo は、環境変数から Slack 認証情報を取得します。
+func getSlackAuthInfo() slackAuthInfo {
+	return slackAuthInfo{
+		WebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
+		Username:   os.Getenv("SLACK_USERNAME"),
+		IconEmoji:  os.Getenv("SLACK_ICON_EMOJI"),
+		Channel:    os.Getenv("SLACK_CHANNEL"),
+	}
 }
