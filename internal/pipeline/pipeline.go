@@ -1,19 +1,19 @@
-package cmd
+package pipeline
 
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"git-gemini-reviewer-go/internal/builder"
 	"git-gemini-reviewer-go/internal/config"
+	"log/slog"
 
 	"github.com/shouni/go-utils/urlpath"
 )
 
-// executeReviewPipeline は、すべての依存関係を構築し、レビューパイプラインを実行します。
+// ExecuteReviewPipeline は、すべての依存関係を構築し、レビューパイプラインを実行します。
 // 実行結果の文字列とエラーを返します。
-func executeReviewPipeline(
+func ExecuteReviewPipeline(
 	ctx context.Context,
 	cfg config.ReviewConfig,
 ) (string, error) {

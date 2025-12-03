@@ -9,7 +9,7 @@
 
 **Git Gemini Cli** は、AIコードレビューの**コア機能**を **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** モジュールに依存し、それをCLIとして公開するための**ラッパーアプリケーション**です。
 
-本ツールは、ユーザーの入力（CLIフラグ）を解析し、コアライブラリを組み合わせて**レビューパイプライン全体を実行**し、結果を様々なサービス（Slack, クラウドストレージ, Backlog, 標準出力）に投稿する**インターフェースの責務**を担います。AIは煩雑な初期チェックを担う、**チームの優秀な新しいパートナー**のような存在です。
+本ツールは、ユーザーの入力（CLIフラグ）を解析し、コアライブラリを組み合わせて**レビューパイプライン全体を実行**し、結果を様々なサービス（クラウドストレージ, 標準出力）に投稿する**インターフェースの責務**を担います。AIは煩雑な初期チェックを担う、**チームの優秀な新しいパートナー**のような存在です。
 
 -----
 
@@ -22,8 +22,6 @@
 | **コアロジック** | **`github.com/shouni/gemini-reviewer-core`** | **Git操作**、**AI通信**、**HTML変換**といった中核のレビュー機能を担う外部ライブラリです。 |
 | **AI通信** | **`google.golang.org/genai` (Go SDK)** | Gemini APIへのアクセス。リトライ機構付きでSDKをラッピングし、堅牢な通信を実現します。 |
 | **ロギング** | **log/slog** | 構造化されたログ (`key=value`) に完全移行。詳細なデバッグ情報が必要な際に、ログレベルを上げて柔軟に対応できます。 |
-| **堅牢性** | **cenkalti/backoff** (内部移植) | **AI API通信**、**Slack**、**Backlog**への投稿処理に**リトライ機構**を実装。一時的なネットワーク障害やAPIのレート制限からの自動回復を実現します。 |
-| 連携サービス | Slack Go ライブラリ (slack-go/slack) / 標準 net/http | Slack Block Kit を使用したリッチなメッセージングと、Backlog API への投稿に使用します。 |
 
 -----
 
@@ -42,11 +40,7 @@
 
 ## 🛠️ 事前準備と環境設定
 
-### 1\. Go のインストール
-
-本ツールは Go言語で開発されています。Goが未インストールの場合は、[公式ドキュメント](https://go.dev/doc/install) を参照し、環境に合わせたインストールを行ってください。
-
-### 2\. プロジェクトのセットアップとビルド
+### 1\. プロジェクトのセットアップとビルド
 
 ```bash
 # リポジトリをクローン
@@ -67,12 +61,7 @@ Gemini API を利用するために、API キーを環境変数に設定する�
 ```bash
 # Gemini API キー (必須)
 export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
-
-# Backlog 連携を使用する場合 (`backlog` コマンド利用時のみ)
-export BACKLOG_API_KEY="YOUR_BACKLOG_API_KEY"
-export BACKLOG_SPACE_URL="https://your-space.backlog.jp"
-
-# Slack 連携を使用する場合 (`slack` コマンド利用時のみ)
+# Slack 連携
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 ```
 
@@ -171,55 +160,6 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | :--- | :--- | :--- | :--- | :--- |
 | `--uri` | **`-s`** | 書き込み先 URI (**`gs://...`** または **`s3://...`** をサポート) | ✅ | **なし** |
 | `--content-type` | **`-t`** | クラウドストレージに保存するファイルのMIMEタイプ | ❌ | **`text/html; charset=utf-8`** |
-
------
-
-### 3\. Backlog 投稿モード (`backlog`) 🌟
-
-リモートリポジトリのブランチ比較を行い、その結果を Backlog の指定された課題に**コメントとして投稿**します。投稿失敗時には**リトライ機構**が働きます。
-
-#### 実行コマンド例
-
-```bash
-# bugfix/issue-456 の差分をレビューし、PROJECT-123 に投稿
-./bin/git_gemini_cli backlog \
-  --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
-  --base-branch "main" \
-  --feature-branch "bugfix/issue-456" \
-  -i "PROJECT-123" 
-```
-
-#### 固有フラグ (Backlog連携)
-
-| フラグ | ショートカット | 説明 | 必須 | デフォルト値 |
-| :--- | :--- | :--- | :--- | :--- |
-| `--issue-id` | **`-i`** | コメントを投稿する Backlog 課題 ID (例: PROJECT-123) | **投稿時のみ✅** | なし |
-| `--no-post` | なし | Backlog への投稿をスキップし、結果を標準出力する | ❌ | `false` |
-
------
-
-### 4\. Slack 投稿モード (`slack`) 🌟 (Block Kit 対応済み)
-
-リモートリポジトリのブランチ比較を行い、その結果を **Slack の Webhook URL** を通じてメッセージとして投稿します。投稿失敗時には**リトライ機構**が働き、リポジトリ情報を元にした**自動識別子抽出**も行われます。
-
-**【重要な変更点】** Slack Go ライブラリ(slack-go/slack)を使用した **Slack Block Kit 形式**で投稿されるようになりました。これにより、通知が構造化され、視認性が大幅に向上しました。さらに、通知には**レビュー対象のブランチ名とリポジトリ名**が含められます。
-
-#### 実行コマンド例
-
-```bash
-# feature/slack-notify の差分を詳細レビューモードで実行し、Slackに投稿
-./bin/git_gemini_cli slack \
-  -m "detail" \
-  --repo-url "ssh://github.com/owner/repo-name.git" \
-  --base-branch "main" \
-  --feature-branch "feature/slack-notify" 
-```
-
-#### 固有フラグ (Slack連携)
-
-| フラグ | 説明 | 必須 | デフォルト値 |
-| :--- | :--- | :--- | :--- |
-| `--no-post` | Slack への投稿をスキップし、結果を標準出力する | ❌ | `false` |
 
 -----
 
