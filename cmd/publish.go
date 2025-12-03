@@ -3,14 +3,14 @@ package cmd
 import (
 	"context"
 	"fmt"
+	"git-gemini-reviewer-go/internal/config"
 	"log/slog"
 	"os"
 	"strings"
 	"time"
 
-	"git-gemini-reviewer-go/internal/config"
-
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
+	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-notifier/pkg/factory"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
@@ -18,6 +18,8 @@ import (
 
 	"github.com/spf13/cobra"
 )
+
+const defaultHTTPTimeout = 30 * time.Second
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
 type PublishFlags struct {
@@ -60,7 +62,6 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 	targetURI := publishFlags.URI
-	urlSigner := publishFlags.URI
 
 	// 1. レビューパイプラインを実行 (ReviewConfigを渡す)
 	reviewResult, err := executeReviewPipeline(ctx, ReviewConfig)
@@ -85,26 +86,6 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 			return fmt.Errorf("GCSクライアントファクトリの初期化に失敗しました: %w", err)
 		}
 		registry.GCSFactory = gcsFactory
-
-		// GCSクライアントの直接初期化を削除し、Factory経由でURLSignerを取得
-		urlSigner, err := gcsFactory.NewGCSURLSigner()
-		if err != nil {
-			slog.Error("URLSigner の取得に失敗", "error", err)
-		}
-
-		// 抽象化されたインターフェースを経由して署名付きURLを生成
-		const signedURLExpiration = 15 * time.Minute
-		signedURL, err := urlSigner.GenerateSignedURL(
-			ctx,
-			targetURI,
-			"GET",
-			signedURLExpiration,
-		)
-		if err != nil {
-			slog.Error("署名付きURLの生成に失敗", "error", err)
-		}
-		slog.Info("署名付きURLの生成に成功", "url", signedURL)
-
 	} else if remoteio.IsS3URI(targetURI) {
 		s3Factory, err := s3factory.NewS3ClientFactory(ctx)
 		if err != nil {
@@ -134,8 +115,35 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", publishFlags.URI)
 
 	// --- 4. Slack通知 ---
+	publicURL := targetURI
+	// GCSクライアントの直接初期化を削除し、Factory経由でURLSignerを取得
+	if remoteio.IsGCSURI(targetURI) {
+		urlSigner, err := registry.GCSFactory.NewGCSURLSigner()
+		if err != nil {
+			slog.Error("URLSigner の取得に失敗", "error", err)
+		}
+
+		// 抽象化されたインターフェースを経由して署名付きURLを生成
+		const signedURLExpiration = 15 * time.Minute
+		publicURL, err := urlSigner.GenerateSignedURL(
+			ctx,
+			targetURI,
+			"GET",
+			signedURLExpiration,
+		)
+		if err != nil {
+			slog.Error("署名付きURLの生成に失敗", "error", err)
+		}
+		slog.Info("署名付きURLの生成に成功", "url", publicURL)
+
+	} else if remoteio.IsS3URI(targetURI) {
+		const defaultAWSRegion = "ap-northeast-1"
+		// S3の公開URL形式に変換
+		publicURL = convertS3URIToPublicURL(targetURI, defaultAWSRegion)
+	}
+
 	// ロジックを分離した関数へ委譲
-	if err := sendSlackNotification(ctx, urlSigner, ReviewConfig); err != nil {
+	if err := sendSlackNotification(ctx, publicURL, ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
 	}
@@ -148,7 +156,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 // --------------------------------------------------------------------------
 
 // sendSlackNotification は Slack 通知を送信します。
-func sendSlackNotification(ctx context.Context, targetURI string, cfg config.ReviewConfig) error {
+func sendSlackNotification(ctx context.Context, publicURL string, cfg config.ReviewConfig) error {
 	// 1. Slack 認証情報の取得
 	slackAuthInfo := getSlackAuthInfo()
 
@@ -156,17 +164,6 @@ func sendSlackNotification(ctx context.Context, targetURI string, cfg config.Rev
 	if slackAuthInfo.WebhookURL == "" {
 		slog.Info("SLACK_WEBHOOK_URL が設定されていません。Slack通知をスキップします。")
 		return nil
-	}
-
-	// 2. URIを公開URL形式に変換
-	publicURL := targetURI
-	if remoteio.IsS3URI(targetURI) {
-		const defaultAWSRegion = "ap-northeast-1"
-		// S3の公開URL形式に変換
-		publicURL = convertS3URIToPublicURL(targetURI, defaultAWSRegion)
-		slog.Debug("S3 URIを公開URLに変換しました。", "public_url", publicURL, "region", defaultAWSRegion)
-	} else if remoteio.IsGCSURI(targetURI) {
-		slog.Warn("GCS URIの公開URL変換ロジックは現在未実装です。URIをそのまま使用します。", "uri", publicURL)
 	}
 
 	// リポジトリ名を抽出
@@ -189,11 +186,8 @@ func sendSlackNotification(ctx context.Context, targetURI string, cfg config.Rev
 		cfg.GeminiModel,
 	)
 
-	// 4. HTTP Clientの取得 (cmd/root.go の関数を使用)
-	httpClient, err := GetHTTPClient(ctx)
-	if err != nil {
-		return fmt.Errorf("HTTP Clientの取得に失敗しました: %w", err)
-	}
+	// 4. HTTP Clientの取得
+	httpClient := httpkit.New(defaultHTTPTimeout)
 
 	// 5. Slackクライアントの初期化
 	slackClient, err := factory.GetSlackClient(httpClient)
