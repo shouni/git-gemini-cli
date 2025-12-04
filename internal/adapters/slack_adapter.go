@@ -68,7 +68,7 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 		)
 		if err != nil {
 			slog.Error("署名付きURLの生成に失敗", "error", err)
-			// エラーが発生した場合、publicURL は targetURI のままとなる。
+			return fmt.Errorf("署名付きURLの取得に失敗しました: %w", err)
 		} else {
 			publicURL = signedURL
 			slog.Info("署名付きURLの生成に成功", "url", publicURL)
