@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"net/url"
 	"os"
 	"strings"
 	"time"
@@ -14,6 +13,7 @@ import (
 	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-notifier/pkg/factory"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
+	"github.com/shouni/go-utils/urlpath"
 )
 
 // --- 定数と内部構造体 ---
@@ -122,9 +122,7 @@ func (a *SlackAdapter) getPublicURL(ctx context.Context, targetURI string) (stri
 
 // buildSlackContent は投稿メッセージの本文を組み立てます。
 func (a *SlackAdapter) buildSlackContent(publicURL, targetURI string, cfg config.ReviewConfig) string {
-	repoPath := getRepositoryPath(cfg.RepoURL)
-
-	// 3. Slack に投稿するメッセージを作成
+	repoPath := urlpath.GetRepositoryPath(cfg.RepoURL)
 	content := fmt.Sprintf(
 		"**詳細URL:** <%s|%s>\n"+
 			"**リポジトリ:** `%s`\n"+
@@ -145,28 +143,6 @@ func (a *SlackAdapter) buildSlackContent(publicURL, targetURI string, cfg config
 // --------------------------------------------------------------------------
 // ヘルパー関数
 // --------------------------------------------------------------------------
-
-// getRepositoryPath はリポジトリURLから 'owner/repo-name' の形式のパスを抽出します。
-func getRepositoryPath(repoURL string) string {
-	// SSH形式 (git@host:owner/repo.git) を net/url でパース可能な形式に変換
-	if strings.HasPrefix(repoURL, "git@") {
-		if idx := strings.Index(repoURL, ":"); idx != -1 {
-			repoURL = "ssh://" + repoURL[:idx] + "/" + repoURL[idx+1:] // ':' を '/' に置換
-		}
-	}
-
-	u, err := url.Parse(repoURL)
-	if err != nil {
-		slog.Warn("リポジトリURLのパースに失敗しました。元のURLをそのまま使用します。", "url", repoURL, "error", err)
-		return repoURL // パース失敗時は元のURLを返す
-	}
-
-	// パス部分から先頭の '/' と末尾の '.git' を除去
-	path := strings.TrimPrefix(u.Path, "/")
-	path = strings.TrimSuffix(path, ".git")
-
-	return path
-}
 
 // convertS3URIToPublicURL は S3 URI を AWS の公開 Virtual-Hosted Style アクセス URL に変換します。
 // 形式: https://{bucketName}.s3.{region}.amazonaws.com/{objectKey}
