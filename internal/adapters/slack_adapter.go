@@ -57,36 +57,73 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 	}
 
 	// 2. 署名付きURLの生成
-	publicURL := targetURI
-	// GCSクライアントの直接初期化を削除し、Factory経由でURLSignerを取得
+	publicURL, err := a.getPublicURL(ctx, targetURI)
+	if err != nil {
+		// URL署名は必須ではないため、警告ログを出力し、署名なしのURIで続行する
+		slog.Error("公開URLの生成に失敗しました。署名なしURIで通知を試みます。", "error", err, "uri", targetURI)
+		publicURL = targetURI
+	}
+
+	// 3. Slack に投稿するメッセージを作成
+	title := "✅ AIコードレビュー結果がアップロードされました。"
+	content := a.buildSlackContent(publicURL, targetURI, cfg)
+	// 5. HTTP Clientの取得とSlackクライアントの初期化
+	slackClient, err := factory.GetSlackClient(a.httpClient)
+	if err != nil {
+		return fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
+	}
+
+	// 6. Slack投稿処理を実行
+	if err := slackClient.SendTextWithHeader(ctx, title, content); err != nil {
+		return fmt.Errorf("Slackへの結果URL投稿に失敗しました: %w", err)
+	}
+
+	slog.Info("レビュー結果のURLを Slack に投稿しました。", "uri", targetURI)
+	return nil
+}
+
+// getPublicURL は URI に応じて署名付きURLを生成するか、公開URLに変換します。
+func (a *SlackAdapter) getPublicURL(ctx context.Context, targetURI string) (string, error) {
+	if a.urlSigner == nil {
+		// urlSignerがnilの場合、URIは署名が必要ないか、サポートされていないスキームです。
+		slog.Debug("URL Signerがnilです。静的なURI変換のみを試みます。", "uri", targetURI)
+	}
+
+	// GCSの場合: 署名付きURLを生成
 	if remoteio.IsGCSURI(targetURI) {
-		signedURL, err := a.urlSigner.GenerateSignedURL(
-			ctx,
-			targetURI,
-			"GET",
-			signedURLExpiration,
-		)
-		if err != nil {
-			slog.Error("署名付きURLの生成に失敗", "error", err)
-			return fmt.Errorf("署名付きURLの取得に失敗しました: %w", err)
-		} else {
-			publicURL = signedURL
-			slog.Info("署名付きURLの生成に成功", "url", publicURL)
+		if a.urlSigner == nil {
+			return "", fmt.Errorf("GCS URIが指定されましたが、URL Signerがnilです。")
 		}
-	} else if remoteio.IsS3URI(targetURI) {
+
+		signedURL, err := a.urlSigner.GenerateSignedURL(ctx, targetURI, "GET", signedURLExpiration)
+		if err != nil {
+			return "", fmt.Errorf("GCS 署名付きURLの生成に失敗しました: %w", err)
+		}
+		slog.Info("GCS 署名付きURLの生成に成功", "url", signedURL)
+		return signedURL, nil
+	}
+
+	// S3の場合: 静的な公開URL形式に変換
+	if remoteio.IsS3URI(targetURI) {
 		awsRegion := os.Getenv("AWS_REGION")
 		if awsRegion == "" {
 			awsRegion = "ap-northeast-1" // フォールバック
 		}
-		// S3の公開URL形式に変換
-		publicURL = convertS3URIToPublicURL(targetURI, awsRegion)
+		publicURL := convertS3URIToPublicURL(targetURI, awsRegion)
+		slog.Info("S3 公開URLへの変換に成功", "url", publicURL)
+		return publicURL, nil
 	}
 
-	// リポジトリ名を抽出
+	// その他: 署名や変換が不要なURI (例: ローカルファイル、未サポートのプロバイダ)
+	slog.Debug("静的な公開URL変換や署名が不要なURIです。", "uri", targetURI)
+	return targetURI, nil
+}
+
+// buildSlackContent は投稿メッセージの本文を組み立てます。
+func (a *SlackAdapter) buildSlackContent(publicURL, targetURI string, cfg config.ReviewConfig) string {
 	repoPath := getRepositoryPath(cfg.RepoURL)
 
 	// 3. Slack に投稿するメッセージを作成
-	title := "✅ AIコードレビュー結果がアップロードされました。"
 	content := fmt.Sprintf(
 		"**詳細URL:** <%s|%s>\n"+
 			"**リポジトリ:** `%s`\n"+
@@ -101,21 +138,7 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 		cfg.ReviewMode,
 		cfg.GeminiModel,
 	)
-	content = strings.TrimSpace(content)
-
-	// 5. HTTP Clientの取得とSlackクライアントの初期化
-	slackClient, err := factory.GetSlackClient(a.httpClient)
-	if err != nil {
-		return fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
-	}
-
-	// 6. Slack投稿処理を実行
-	if err := slackClient.SendTextWithHeader(ctx, title, content); err != nil {
-		return fmt.Errorf("Slackへの結果URL投稿に失敗しました: %w", err)
-	}
-
-	slog.Info("レビュー結果のURLを Slack に投稿しました。", "uri", targetURI)
-	return nil
+	return strings.TrimSpace(content)
 }
 
 // --------------------------------------------------------------------------
