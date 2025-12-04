@@ -1,7 +1,7 @@
 package main
 
 import (
-	"git-gemini-reviewer-go/cmd" // CLIのエントリポイント
+	"git-gemini-cli/cmd" // CLIのエントリポイント
 )
 
 func main() {
