@@ -5,8 +5,8 @@ import (
 	"log/slog"
 	"os"
 
-	"git-gemini-reviewer-go/internal/adapters"
-	"git-gemini-reviewer-go/internal/pipeline"
+	"git-gemini-cli/internal/adapters"
+	"git-gemini-cli/internal/pipeline"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 	"github.com/spf13/cobra"
