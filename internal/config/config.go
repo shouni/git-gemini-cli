@@ -11,5 +11,5 @@ type ReviewConfig struct {
 	SSHKeyPath            string
 	LocalPath             string
 	SkipHostKeyCheck      bool
-	UseInternalGitAdapter bool
+	UseExternalGitCommand bool
 }
