@@ -77,7 +77,11 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", publishFlags.URI)
 
 	// --- 4. Slack通知 ---
-	slackNotifier := adapters.NewSlackAdapter(urlSigner, os.Getenv("SLACK_WEBHOOK_URL"))
+	httpClient, err := GetHTTPClient(ctx)
+	if err != nil {
+		return fmt.Errorf("HTTPクライアントの取得に失敗しました: %w", err)
+	}
+	slackNotifier := adapters.NewSlackAdapter(httpClient, urlSigner, os.Getenv("SLACK_WEBHOOK_URL"))
 	slog.Debug("SlackNotifierを構築しました。", "adapter_type", "adapters")
 	if err := slackNotifier.Notify(ctx, targetURI, ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。

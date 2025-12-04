@@ -21,8 +21,6 @@ import (
 const (
 	// signedURLExpiration は署名付きURLの有効期限を定義します。
 	signedURLExpiration = 30 * time.Minute
-	// httpClientTimeout はHTTPクライアントのタイムアウトを定義します。
-	httpClientTimeout = 30 * time.Second
 )
 
 // SlackNotifier は Slack への通知機能を提供する契約を定義します。
@@ -35,17 +33,17 @@ type SlackNotifier interface {
 // SlackAdapter は SlackNotifier インターフェースを満たす具象型です。
 // 署名付きURL生成のために FactoryRegistry に依存します。
 type SlackAdapter struct {
+	httpClient httpkit.ClientInterface
 	urlSigner  remoteio.URLSigner
 	webhookURL string
-	httpClient *httpkit.Client
 }
 
 // NewSlackAdapter は新しいアダプターインスタンスを作成します。
-func NewSlackAdapter(urlSigner remoteio.URLSigner, webhookURL string) *SlackAdapter {
+func NewSlackAdapter(httpClient httpkit.ClientInterface, urlSigner remoteio.URLSigner, webhookURL string) *SlackAdapter {
 	return &SlackAdapter{
+		httpClient: httpClient,
 		urlSigner:  urlSigner,
 		webhookURL: webhookURL,
-		httpClient: httpkit.New(httpClientTimeout),
 	}
 }
 
@@ -70,7 +68,7 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 		)
 		if err != nil {
 			slog.Error("署名付きURLの生成に失敗", "error", err)
-			// エラーが発生した場合、publicURL は targetURI のままとなる。
+			return fmt.Errorf("署名付きURLの取得に失敗しました: %w", err)
 		} else {
 			publicURL = signedURL
 			slog.Info("署名付きURLの生成に成功", "url", publicURL)
