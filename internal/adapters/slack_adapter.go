@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"git-gemini-reviewer-go/internal/config"
+	"git-gemini-cli/internal/config"
 
 	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-notifier/pkg/factory"

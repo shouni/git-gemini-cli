@@ -5,10 +5,10 @@ import (
 	"fmt"
 	"log/slog"
 
-	"git-gemini-reviewer-go/internal/config"
-	"git-gemini-reviewer-go/internal/runner"
+	"git-gemini-cli/internal/config"
+	"git-gemini-cli/internal/runner"
 
-	internalAdapters "git-gemini-reviewer-go/internal/adapters"
+	internalAdapters "git-gemini-cli/internal/adapters"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"

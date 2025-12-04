@@ -3,7 +3,7 @@ package cmd
 import (
 	"context"
 	"fmt"
-	"git-gemini-reviewer-go/internal/config"
+	"git-gemini-cli/internal/config"
 	"log/slog"
 	"os"
 	"time"

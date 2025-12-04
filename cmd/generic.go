@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"log/slog"
 
-	"git-gemini-reviewer-go/internal/pipeline"
+	"git-gemini-cli/internal/pipeline"
 
 	"github.com/spf13/cobra"
 )

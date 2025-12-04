@@ -1,15 +1,15 @@
-module git-gemini-reviewer-go
+module git-gemini-cli
 
 go 1.25
 
 require (
-	github.com/shouni/gemini-reviewer-core v1.0.16
+	github.com/shouni/gemini-reviewer-core v1.0.17
 	github.com/shouni/go-cli-base v1.0.5
 	github.com/shouni/go-http-kit v1.1.2
 	github.com/shouni/go-notifier v1.1.4
 	github.com/shouni/go-remote-io v1.1.0
 	github.com/shouni/go-utils v1.0.15
-	github.com/spf13/cobra v1.10.1
+	github.com/spf13/cobra v1.10.2
 )
 
 require (

@@ -4,8 +4,8 @@ import (
 	"context"
 	"fmt"
 
-	"git-gemini-reviewer-go/internal/builder"
-	"git-gemini-reviewer-go/internal/config"
+	"git-gemini-cli/internal/builder"
+	"git-gemini-cli/internal/config"
 	"log/slog"
 
 	"github.com/shouni/go-utils/urlpath"
