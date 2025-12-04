@@ -25,12 +25,6 @@ func ExecuteReviewPipeline(
 		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", cfg.LocalPath)
 	}
 
-	// cfg.UseInternalGitAdapter = true は、Git操作に内部で実装されたアダプタを使用することを示します。
-	// これは、os/exec を利用した外部コマンド実行を抽象化したものであり、
-	// README.mdで説明されている「外部コマンド実行」の原則に沿っています。
-	// この設定により、コアライブラリ側でGitコマンドの実行方法を抽象化し、
-	// 将来的な拡張性やテスト容易性を向上させています。
-	cfg.UseInternalGitAdapter = true
 	reviewRunner, err := builder.BuildReviewRunner(ctx, cfg)
 	if err != nil {
 		// BuildReviewRunner が内部でアダプタやビルダーの構築エラーをラップして返す
