@@ -106,7 +106,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | `--gemini` | **`-g`** | 使用する Gemini モデル名 (例: `gemini-2.5-flash`) | `gemini-2.5-flash` | ❌ |
 | `--ssh-key-path` | **`-k`** | Git 認証用の SSH 秘密鍵のパス。**チルダ (`~`) 展開をサポート**しています。**CI/CD環境ではシークレットマウント先の絶対パス**を指定してください。 | `~/.ssh/id_rsa` | ❌ |
 | `--skip-host-key-check` | なし | SSHホストキーチェックをスキップする（**🚨非推奨/危険な設定**）。**`known_hosts`を使用しない**場合に設定します。 | `false` | ❌ |
-| `--se-external-git-command` | なし | ローカルのGitコマンド使用する。 | **`true`** | ❌ |
+| `--use-external-git-command` | なし | ローカルのGitコマンド使用する。 | **`true`** | ❌ |
 
 -----
 

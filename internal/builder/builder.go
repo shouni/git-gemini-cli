@@ -19,9 +19,7 @@ import (
 func buildGitService(cfg config.ReviewConfig) adapters.GitService {
 	// フラグが true の場合、CLI固有の内部アダプタ (os/execベース) を使用
 	if cfg.UseExternalGitCommand {
-		// internalAdapters.NewLocalGitAdapter は、
-		// コアライブラリの adapters.GitService インターフェースを実装している必要があります。
-		slog.Debug("GitService: 内部 (LocalGitAdapter/os/exec) を使用します。")
+		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
 		return internalAdapters.NewLocalGitAdapter(
 			cfg.LocalPath,
 			cfg.SSHKeyPath,
