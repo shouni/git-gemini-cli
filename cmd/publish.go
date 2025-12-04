@@ -58,7 +58,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// --- 2. マルチクラウド対応ファクトリの利用 ---
-	writer, urlSigner, err := adapters.InitPublisherAndSigner(ctx, targetURI)
+	writer, urlSigner, err := publisher.NewPublisherAndSigner(ctx, targetURI)
 	if err != nil {
 		return err // 初期化に失敗したら即座にエラーを返す
 	}
