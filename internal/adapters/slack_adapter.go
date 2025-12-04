@@ -60,20 +60,21 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 	publicURL, err := a.getPublicURL(ctx, targetURI)
 	if err != nil {
 		// URL署名は必須ではないため、警告ログを出力し、署名なしのURIで続行する
-		slog.Error("公開URLの生成に失敗しました。署名なしURIで通知を試みます。", "error", err, "uri", targetURI)
+		slog.Warn("公開URLの生成に失敗しました。署名なしURIで通知を試みます。", "error", err, "uri", targetURI)
 		publicURL = targetURI
 	}
 
-	// 3. Slack に投稿するメッセージを作成
+	// 3. HTTP Clientの取得とSlackクライアントの初期化
+	slackClient, err := factory.GetSlackClient(a.httpClient)
+
+	// 4. Slack に投稿するメッセージを作成
 	title := "✅ AIコードレビュー結果がアップロードされました。"
 	content := a.buildSlackContent(publicURL, targetURI, cfg)
-	// 5. HTTP Clientの取得とSlackクライアントの初期化
-	slackClient, err := factory.GetSlackClient(a.httpClient)
 	if err != nil {
 		return fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
 	}
 
-	// 6. Slack投稿処理を実行
+	// 5. Slack投稿処理を実行
 	if err := slackClient.SendTextWithHeader(ctx, title, content); err != nil {
 		return fmt.Errorf("Slackへの結果URL投稿に失敗しました: %w", err)
 	}
