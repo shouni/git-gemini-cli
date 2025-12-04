@@ -5,6 +5,7 @@ import (
 	"fmt"
 	"log/slog"
 	"net/url"
+	"os"
 	"strings"
 	"time"
 
@@ -75,9 +76,12 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 			slog.Info("署名付きURLの生成に成功", "url", publicURL)
 		}
 	} else if remoteio.IsS3URI(targetURI) {
-		const defaultAWSRegion = "ap-northeast-1"
+		awsRegion := os.Getenv("AWS_REGION")
+		if awsRegion == "" {
+			awsRegion = "ap-northeast-1" // フォールバック
+		}
 		// S3の公開URL形式に変換
-		publicURL = convertS3URIToPublicURL(targetURI, defaultAWSRegion)
+		publicURL = convertS3URIToPublicURL(targetURI, awsRegion)
 	}
 
 	// リポジトリ名を抽出
