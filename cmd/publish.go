@@ -69,8 +69,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}
 	err = publisherRunner.Run(ctx, publishParams)
 	if err != nil {
-		slog.Error("公開に失敗しました。", "error", err)
-		return err
+		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)
 	}
 
 	return nil
