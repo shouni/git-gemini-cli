@@ -9,6 +9,11 @@ import (
 	"github.com/spf13/cobra"
 )
 
+func init() {
+	genericCmd.MarkPersistentFlagRequired("repo-url")
+	genericCmd.MarkPersistentFlagRequired("feature-branch")
+}
+
 // publishCmd は 'publish' サブコマンドを定義します。
 var genericCmd = &cobra.Command{
 	Use:   "generic",
@@ -16,11 +21,6 @@ var genericCmd = &cobra.Command{
 	Long:  `このコマンドは、指定されたGitリポジトリのブランチ間の差分をAIでレビューし、その結果を標準出力に直接表示します。外部サービスとの連携は行いません。`,
 	Args:  cobra.NoArgs,
 	RunE:  genericCommand,
-}
-
-func init() {
-	genericCmd.MarkPersistentFlagRequired("repo-url")
-	genericCmd.MarkPersistentFlagRequired("feature-branch")
 }
 
 // --------------------------------------------------------------------------

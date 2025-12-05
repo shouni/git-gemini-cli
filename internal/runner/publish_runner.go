@@ -20,7 +20,7 @@ type PublishParams struct {
 	SlackWebhookURL string
 }
 
-// PublisherRunner インターフェースも更新
+// PublisherRunner は、レビュー結果の公開処理を実行する責務を持つインターフェースです。
 type PublisherRunner interface {
 	Run(ctx context.Context, params PublishParams) error
 }
@@ -55,8 +55,8 @@ func (p *CorePublisherRunner) Run(ctx context.Context, params PublishParams) err
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", params.TargetURI)
 
 	// Slack通知 (Webhook URLが設定されている場合のみ実行)
-	if params.Config.SlackWebhookURL != "" {
-		slackNotifier := adapters.NewSlackAdapter(p.httpClient, urlSigner, params.Config.SlackWebhookURL)
+	if webhookURL := params.Config.SlackWebhookURL; webhookURL != "" {
+		slackNotifier := adapters.NewSlackAdapter(p.httpClient, urlSigner, webhookURL)
 		slog.Debug("SlackNotifierを構築しました。", "adapter_type", "adapters")
 		if err := slackNotifier.Notify(ctx, params.TargetURI, params.Config); err != nil {
 			// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
