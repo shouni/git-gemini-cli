@@ -66,13 +66,13 @@ func (a *SlackAdapter) Notify(ctx context.Context, targetURI string, cfg config.
 
 	// 3. HTTP Clientの取得とSlackクライアントの初期化
 	slackClient, err := factory.GetSlackClient(a.httpClient)
+	if err != nil {
+		return fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
+	}
 
 	// 4. Slack に投稿するメッセージを作成
 	title := "✅ AIコードレビュー結果がアップロードされました。"
 	content := a.buildSlackContent(publicURL, targetURI, cfg)
-	if err != nil {
-		return fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
-	}
 
 	// 5. Slack投稿処理を実行
 	if err := slackClient.SendTextWithHeader(ctx, title, content); err != nil {
