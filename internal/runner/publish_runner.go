@@ -25,12 +25,12 @@ type PublisherRunner interface {
 	Run(ctx context.Context, params PublishParams) error
 }
 
-// CorePublisherRunner は CorePublisherRunner インターフェースの具体的な実装です。
+// CorePublisherRunner は PublisherRunner インターフェースの具体的な実装です。
 type CorePublisherRunner struct {
 	httpClient httpkit.ClientInterface
 }
 
-// NewCorePublisherRunner は NewCorePublisherRunner のインスタンスを構築します。
+// NewCorePublisherRunner は CorePublisherRunner の新しいインスタンスを生成します。
 func NewCorePublisherRunner(client httpkit.ClientInterface) *CorePublisherRunner {
 	return &CorePublisherRunner{
 		httpClient: client,
@@ -55,7 +55,8 @@ func (p *CorePublisherRunner) Run(ctx context.Context, params PublishParams) err
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", params.TargetURI)
 
 	// Slack通知 (Webhook URLが設定されている場合のみ実行)
-	if webhookURL := params.Config.SlackWebhookURL; webhookURL != "" {
+	webhookURL := params.SlackWebhookURL
+	if webhookURL != "" {
 		slackNotifier := adapters.NewSlackAdapter(p.httpClient, urlSigner, webhookURL)
 		slog.Debug("SlackNotifierを構築しました。", "adapter_type", "adapters")
 		if err := slackNotifier.Notify(ctx, params.TargetURI, params.Config); err != nil {
