@@ -5,7 +5,7 @@
 [![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/shouni/git-gemini-cli)](https://github.com/shouni/git-gemini-cli/tags)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🚀 概要 (About) - ターミナルから起動する、即戦力のAIコード監査官
+## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
 
 **Git Gemini Cli** は、AIコードレビューの**コアライブラリ機能**を **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を活用し、それをCLIとして公開するための**ラッパーアプリケーション**です。
 
