@@ -54,12 +54,16 @@ func (p *CorePublisherRunner) Run(ctx context.Context, params PublishParams) err
 	}
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", params.TargetURI)
 
-	// Slack通知
-	slackNotifier := adapters.NewSlackAdapter(p.httpClient, urlSigner, params.Config.SlackWebhookURL)
-	slog.Debug("SlackNotifierを構築しました。", "adapter_type", "adapters")
-	if err := slackNotifier.Notify(ctx, params.TargetURI, params.Config); err != nil {
-		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
-		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
+	// Slack通知 (Webhook URLが設定されている場合のみ実行)
+	if params.Config.SlackWebhookURL != "" {
+		slackNotifier := adapters.NewSlackAdapter(p.httpClient, urlSigner, params.Config.SlackWebhookURL)
+		slog.Debug("SlackNotifierを構築しました。", "adapter_type", "adapters")
+		if err := slackNotifier.Notify(ctx, params.TargetURI, params.Config); err != nil {
+			// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
+			slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
+		}
+	} else {
+		slog.Info("Slack Webhook URLが設定されていないため、通知をスキップしました。")
 	}
 
 	return nil
