@@ -5,9 +5,9 @@
 [![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/shouni/git-gemini-cli)](https://github.com/shouni/git-gemini-cli/tags)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
-## 🚀 概要 (About) - 開発チームの生産性を高めるAIパートナー
+## 🚀 概要 (About) - ターミナルから起動する、即戦力のAIコード監査官
 
-**Git Gemini Cli** は、AIコードレビューの**コア機能**を **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** モジュールに依存し、それをCLIとして公開するための**ラッパーアプリケーション**です。
+**Git Gemini Cli** は、AIコードレビューの**コアライブラリ機能**を **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を活用し、それをCLIとして公開するための**ラッパーアプリケーション**です。
 
 本ツールは、ユーザーの入力（CLIフラグ）を解析し、コアライブラリを組み合わせて**レビューパイプライン全体を実行**し、結果を様々なサービス（クラウドストレージ, 標準出力）に投稿する**インターフェースの責務**を担います。AIは煩雑な初期チェックを担う、**チームの優秀な新しいパートナー**のような存在です。
 
@@ -19,8 +19,7 @@
 | :--- | :--- | :--- |
 | **言語** | **Go (Golang)** | ツールの開発言語。クロスプラットフォームでの高速な実行を実現します。 |
 | **CLI フレームワーク** | **Cobra** | コマンドライン引数（フラグ）の解析とサブコマンド構造 (`generic`, `publish`) の構築に使用します。 |
-| **コアロジック** | **`github.com/shouni/gemini-reviewer-core`** | **Git操作**、**AI通信**、**HTML変換**といった中核のレビュー機能を担う外部ライブラリです。 |
-| **AI通信** | **`google.golang.org/genai` (Go SDK)** | Gemini APIへのアクセス。リトライ機構付きでSDKをラッピングし、堅牢な通信を実現します。 |
+| **コアレビュー機能** | **[`github.com/shouni/gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
 | **ロギング** | **log/slog** | 構造化されたログ (`key=value`) に完全移行。詳細なデバッグ情報が必要な際に、ログレベルを上げて柔軟に対応できます。 |
 
 -----
