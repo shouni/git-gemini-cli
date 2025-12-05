@@ -160,7 +160,6 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | フラグ | ショートカット | 説明 | 必須 | デフォルト値 |
 | :--- | :--- | :--- | :--- | :--- |
 | `--uri` | **`-s`** | 書き込み先 URI (**`gs://...`** または **`s3://...`** をサポート) | ✅ | **なし** |
-| `--content-type` | **`-t`** | クラウドストレージに保存するファイルのMIMEタイプ | ❌ | **`text/html; charset=utf-8`** |
 
 -----
 
