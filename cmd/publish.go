@@ -3,7 +3,6 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
-	"os"
 
 	"github.com/spf13/cobra"
 
@@ -62,9 +61,16 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("HTTPクライアントの取得に失敗しました: %w", err)
 	}
 	publisherRunner := runner.NewCorePublisherRunner(httpClient)
-	err = publisherRunner.Run(ctx, ReviewConfig, publishFlags.URI, reviewResult, os.Getenv("SLACK_WEBHOOK_URL"))
+	publishParams := runner.PublishParams{
+		Config:          ReviewConfig,
+		TargetURI:       publishFlags.URI,
+		ReviewResult:    reviewResult,
+		SlackWebhookURL: ReviewConfig.SlackWebhookURL,
+	}
+	err = publisherRunner.Run(ctx, publishParams)
 	if err != nil {
 		slog.Error("公開に失敗しました。", "error", err)
+		return err
 	}
 
 	return nil

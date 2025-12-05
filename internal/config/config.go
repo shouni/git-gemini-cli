@@ -12,4 +12,5 @@ type ReviewConfig struct {
 	LocalPath             string
 	SkipHostKeyCheck      bool
 	UseExternalGitCommand bool
+	SlackWebhookURL       string
 }

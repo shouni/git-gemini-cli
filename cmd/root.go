@@ -32,6 +32,8 @@ func GetHTTPClient(ctx context.Context) (*httpkit.Client, error) {
 // initAppPreRunE は、アプリケーション固有のPersistentPreRunEです。
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
 
+	ReviewConfig.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
+
 	// 1. slog ハンドラの設定
 	logLevel := slog.LevelInfo
 	if clibase.Flags.Verbose {
