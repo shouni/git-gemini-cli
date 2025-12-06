@@ -14,10 +14,9 @@ import (
 
 // PublishParams は Run メソッドのパラメータをカプセル化します。
 type PublishParams struct {
-	Config          config.ReviewConfig
-	TargetURI       string
-	ReviewResult    string
-	SlackWebhookURL string
+	Config       config.ReviewConfig
+	TargetURI    string
+	ReviewResult string
 }
 
 // PublisherRunner は、レビュー結果の公開処理を実行する責務を持つインターフェースです。
@@ -55,7 +54,7 @@ func (p *CorePublisherRunner) Run(ctx context.Context, params PublishParams) err
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", params.TargetURI)
 
 	// Slack通知 (Webhook URLが設定されている場合のみ実行)
-	webhookURL := params.SlackWebhookURL
+	webhookURL := params.Config.SlackWebhookURL
 	if webhookURL != "" {
 		slackNotifier := adapters.NewSlackAdapter(p.httpClient, urlSigner, webhookURL)
 		slog.Debug("SlackNotifierを構築しました。", "adapter_type", "adapters")

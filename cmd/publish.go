@@ -62,10 +62,9 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}
 	publisherRunner := runner.NewCorePublisherRunner(httpClient)
 	publishParams := runner.PublishParams{
-		Config:          ReviewConfig,
-		TargetURI:       publishFlags.URI,
-		ReviewResult:    reviewResult,
-		SlackWebhookURL: ReviewConfig.SlackWebhookURL,
+		Config:       ReviewConfig,
+		TargetURI:    publishFlags.URI,
+		ReviewResult: reviewResult,
 	}
 	err = publisherRunner.Run(ctx, publishParams)
 	if err != nil {
