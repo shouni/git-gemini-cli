@@ -121,6 +121,7 @@ func (a *SlackAdapter) getPublicURL(ctx context.Context, targetURI string) (stri
 }
 
 // buildSlackContent は投稿メッセージの本文を組み立てます。
+// publicURL がリンク先、targetURI が表示テキスト
 func (a *SlackAdapter) buildSlackContent(publicURL, targetURI string, cfg config.ReviewConfig) string {
 	repoPath := urlpath.GetRepositoryPath(cfg.RepoURL)
 	content := fmt.Sprintf(
