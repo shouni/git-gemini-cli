@@ -45,3 +45,22 @@ func ExecuteReviewPipeline(
 
 	return reviewResult, nil
 }
+
+// ExecutePublishPipeline は、すべての依存関係を構築し、パブリッシュパイプラインを実行します。
+func ExecutePublishPipeline(
+	ctx context.Context,
+	cfg config.PublishConfig,
+) error {
+
+	// 1. クラウドストレージに保存し、そのURLを通知
+	publishRunner, err := builder.BuildPublishRunner(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("PublishRunnerの構築に失敗しました: %w", err)
+	}
+	err = publishRunner.Run(ctx, cfg)
+	if err != nil {
+		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)
+	}
+
+	return nil
+}
