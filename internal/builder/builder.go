@@ -90,9 +90,9 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (*runner.Re
 func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.PublisherRunner, error) {
 
 	// 1. PublisherとSignerの初期化 (マルチクラウド対応)
-	writer, urlSigner, err := publisher.NewPublisherAndSigner(ctx, cfg.TargetURI)
+	writer, urlSigner, err := publisher.NewPublisherAndSigner(ctx, cfg.StorageURI)
 	if err != nil {
-		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.TargetURI, err)
+		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.StorageURI, err)
 	}
 
 	// 2. Slackアダプターの構築
