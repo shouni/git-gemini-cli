@@ -68,11 +68,11 @@ func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, cfg config.Publ
 }
 
 // createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
-func createReviewData(reviewCfg config.ReviewConfig, reviewResult string) publisher.ReviewData {
+func createReviewData(reviewConfig config.ReviewConfig, reviewResult string) publisher.ReviewData {
 	return publisher.ReviewData{
-		RepoURL:        reviewCfg.RepoURL,
-		BaseBranch:     reviewCfg.BaseBranch,
-		FeatureBranch:  reviewCfg.FeatureBranch,
+		RepoURL:        reviewConfig.RepoURL,
+		BaseBranch:     reviewConfig.BaseBranch,
+		FeatureBranch:  reviewConfig.FeatureBranch,
 		ReviewMarkdown: reviewResult,
 	}
 }
