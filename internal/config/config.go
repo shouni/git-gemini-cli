@@ -19,7 +19,6 @@ type ReviewConfig struct {
 type PublishConfig struct {
 	HttpClient      httpkit.ClientInterface
 	ReviewConfig    ReviewConfig
-	TargetURI       string
+	StorageURI      string
 	SlackWebhookURL string
-	ReviewResult    string
 }
