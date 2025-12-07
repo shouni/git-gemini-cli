@@ -96,11 +96,15 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	}
 
 	// 2. Slackアダプターの構築
-	slackNotifier := internalAdapters.NewSlackAdapter(cfg.HttpClient, urlSigner, cfg.SlackWebhookURL)
+	slackNotifier := internalAdapters.NewSlackAdapter(
+		cfg.HttpClient,
+		cfg.SlackWebhookURL,
+	)
 
 	// 3. 依存関係を注入して Runner を組み立てる
 	publicRunner := runner.NewCorePublisherRunner(
 		writer,
+		urlSigner,
 		slackNotifier,
 	)
 	slog.Debug("PublishRunner の構築が完了しました。")
