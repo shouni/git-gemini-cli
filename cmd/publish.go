@@ -67,7 +67,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		config.PublishConfig{
 			HttpClient:      httpClient,
 			ReviewConfig:    ReviewConfig,
-			TargetURI:       publishFlags.URL,
+			StorageURI:      publishFlags.URL,
 			SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
 		},
 		reviewResult,
