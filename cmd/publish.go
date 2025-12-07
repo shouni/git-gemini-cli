@@ -76,7 +76,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("公開パイプラインの実行に失敗しました: %w", err)
 	}
-	slog.Info("✅ 処理完了", "uri", publishFlags.URI)
+	slog.Info("処理完了", "uri", publishFlags.URI)
 
 	return nil
 }
