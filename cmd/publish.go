@@ -13,8 +13,7 @@ import (
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
 type PublishFlags struct {
-	URL             string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
-	SlackWebhookURL string
+	URL string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
 }
 
 var publishFlags PublishFlags
@@ -47,10 +46,6 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	if publishFlags.SlackWebhookURL == "" {
-		publishFlags.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
-	}
-
 	// 1. パイプラインを実行し、結果を受け取る
 	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
 	if err != nil {
@@ -73,7 +68,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 			HttpClient:      httpClient,
 			ReviewConfig:    ReviewConfig,
 			TargetURI:       publishFlags.URL,
-			SlackWebhookURL: publishFlags.SlackWebhookURL,
+			SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
 			ReviewResult:    reviewResult,
 		},
 	)
