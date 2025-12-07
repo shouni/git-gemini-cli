@@ -12,6 +12,7 @@ import (
 
 	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
+	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 )
 
 // buildGitService は adapters.GitService のインスタンスを構築する Factory 関数です。
@@ -82,4 +83,27 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (*runner.Re
 
 	slog.Debug("ReviewRunner の構築が完了しました。")
 	return reviewRunner, nil
+}
+
+// BuildPublishRunner は、必要な依存関係をすべて構築し、
+// runner.PublisherRunner (インターフェース) を返します。
+func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.PublisherRunner, error) {
+
+	// 1. PublisherとSignerの初期化 (マルチクラウド対応)
+	writer, urlSigner, err := publisher.NewPublisherAndSigner(ctx, cfg.TargetURI)
+	if err != nil {
+		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.TargetURI, err)
+	}
+
+	// 2. Slackアダプターの構築
+	slackNotifier := internalAdapters.NewSlackAdapter(cfg.HttpClient, urlSigner, cfg.SlackWebhookURL)
+
+	// 3. 依存関係を注入して Runner を組み立てる
+	publicRunner := runner.NewCorePublisherRunner(
+		writer,
+		slackNotifier,
+	)
+	slog.Debug("PublishRunner の構築が完了しました。")
+
+	return publicRunner, nil
 }

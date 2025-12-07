@@ -27,7 +27,8 @@ func init() {
 // コマンドの実行ロジック
 // --------------------------------------------------------------------------
 
-// genericCommand は generic コマンドの実行ロジックです。
+// genericCommand は、リモートリポジトリのブランチ比較を Gemini AI に依頼し、
+// 結果を標準出力に出力する generic コマンドの実行ロジックです。
 func genericCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 

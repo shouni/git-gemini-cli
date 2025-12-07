@@ -3,16 +3,17 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"os"
 
 	"github.com/spf13/cobra"
 
+	"git-gemini-cli/internal/config"
 	"git-gemini-cli/internal/pipeline"
-	"git-gemini-cli/internal/runner"
 )
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
 type PublishFlags struct {
-	URI string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
+	URL string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
 }
 
 var publishFlags PublishFlags
@@ -28,7 +29,7 @@ var publishCmd = &cobra.Command{
 
 func init() {
 	// フラグ名を汎用的なものに変更
-	publishCmd.Flags().StringVarP(&publishFlags.URI, "uri", "s", "", "保存先のURI (例: gs://bucket/result.html, s3://bucket/result.html)")
+	publishCmd.Flags().StringVarP(&publishFlags.URL, "uri", "s", "", "保存先のURI (例: gs://bucket/result.html, s3://bucket/result.html)")
 	// URIフラグは必須にする
 	publishCmd.MarkFlagRequired("uri")
 
@@ -40,36 +41,42 @@ func init() {
 // コマンドの実行ロジック
 // --------------------------------------------------------------------------
 
-// publishCommand は publish コマンドの実行ロジックです。
+// publishCommand は、AIによるレビュー結果を生成し、指定されたURIのクラウドストレージに
+// 公開（アップロード）と通知を行う publish コマンドの実行ロジックです。
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// 1. レビューパイプラインを実行 (ReviewConfigを渡す)
+	// 1. パイプラインを実行し、結果を受け取る
 	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
 	if err != nil {
 		return err
 	}
-
 	if reviewResult == "" {
-		slog.Warn("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URI)
+		slog.Warn("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URL)
 		return nil
 	}
 
-	// 2. クラウドストレージに保存し、そのURLを通知
 	httpClient, err := GetHTTPClient(ctx)
 	if err != nil {
 		return fmt.Errorf("HTTPクライアントの取得に失敗しました: %w", err)
 	}
-	publisherRunner := runner.NewCorePublisherRunner(httpClient)
-	publishParams := runner.PublishParams{
-		Config:       ReviewConfig,
-		TargetURI:    publishFlags.URI,
-		ReviewResult: reviewResult,
-	}
-	err = publisherRunner.Run(ctx, publishParams)
+
+	// 2. 公開パイプラインを実行し、結果を受け取る
+	err = pipeline.ExecutePublishPipeline(
+		ctx,
+		config.PublishConfig{
+			HttpClient:      httpClient,
+			ReviewConfig:    ReviewConfig,
+			TargetURI:       publishFlags.URL,
+			SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
+			ReviewResult:    reviewResult,
+		},
+	)
+	// 2. パイプライン実行中にエラーが発生した場合、それを呼び出し元に返す
 	if err != nil {
-		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)
+		return fmt.Errorf("公開パイプラインの実行に失敗しました: %w", err)
 	}
+	slog.Info("✅ 処理完了", "uri", publishFlags.URL)
 
 	return nil
 }
