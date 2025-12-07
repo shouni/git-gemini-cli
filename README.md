@@ -1,4 +1,4 @@
-# 🤖 Git Gemini Cli
+# 🤖 Git Gemini CLI
 
 [![Language](https://img.shields.io/badge/Language-Go-blue)](https://golang.org/)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/shouni/git-gemini-cli)](https://golang.org/)
@@ -7,7 +7,7 @@
 
 ## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
 
-**Git Gemini Cli** は、AIコードレビューの**コアロジック**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
+**Git Gemini CLI** は、AIコードレビューの**コアロジック**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
 
 本ツールは、ユーザーのCLIフラグを受け取り、以下の**パイプライン全体**を実行します。
 
