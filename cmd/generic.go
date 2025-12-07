@@ -9,7 +9,7 @@ import (
 	"github.com/spf13/cobra"
 )
 
-// publishCmd は 'publish' サブコマンドを定義します。
+// genericCmd は 'generic' サブコマンドを定義します。
 var genericCmd = &cobra.Command{
 	Use:   "generic",
 	Short: "コードレビューを実行し、その結果を標準出力に出力します。",
