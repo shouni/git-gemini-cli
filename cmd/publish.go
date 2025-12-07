@@ -13,8 +13,8 @@ import (
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
 type PublishFlags struct {
-	url             string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
-	slackWebhookURL string
+	URL             string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
+	SlackWebhookURL string
 }
 
 var publishFlags PublishFlags
@@ -29,10 +29,8 @@ var publishCmd = &cobra.Command{
 }
 
 func init() {
-	publishFlags.slackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
-
 	// フラグ名を汎用的なものに変更
-	publishCmd.Flags().StringVarP(&publishFlags.url, "uri", "s", "", "保存先のURI (例: gs://bucket/result.html, s3://bucket/result.html)")
+	publishCmd.Flags().StringVarP(&publishFlags.URL, "uri", "s", "", "保存先のURI (例: gs://bucket/result.html, s3://bucket/result.html)")
 	// URIフラグは必須にする
 	publishCmd.MarkFlagRequired("uri")
 
@@ -49,13 +47,17 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	if publishFlags.SlackWebhookURL == "" {
+		publishFlags.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
+	}
+
 	// 1. パイプラインを実行し、結果を受け取る
 	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
 	if err != nil {
 		return err
 	}
 	if reviewResult == "" {
-		slog.Warn("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.url)
+		slog.Warn("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URL)
 		return nil
 	}
 
@@ -70,8 +72,8 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		config.PublishConfig{
 			HttpClient:      httpClient,
 			ReviewConfig:    ReviewConfig,
-			TargetURI:       publishFlags.url,
-			SlackWebhookURL: publishFlags.slackWebhookURL,
+			TargetURI:       publishFlags.URL,
+			SlackWebhookURL: publishFlags.SlackWebhookURL,
 			ReviewResult:    reviewResult,
 		},
 	)
@@ -79,7 +81,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	if err != nil {
 		return fmt.Errorf("公開パイプラインの実行に失敗しました: %w", err)
 	}
-	slog.Info("✅ 処理完了", "uri", publishFlags.url)
+	slog.Info("✅ 処理完了", "uri", publishFlags.URL)
 
 	return nil
 }

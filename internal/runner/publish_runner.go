@@ -50,9 +50,7 @@ func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig)
 
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
 func (p *CorePublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig) error {
-	meta := newReviewData(cfg) // config.PublishConfigからデータ生成
-
-	// p.writer は NewCorePublisherRunner で注入されています
+	meta := createReviewData(cfg.ReviewConfig, cfg.ReviewResult)
 	if err := p.writer.Publish(ctx, cfg.TargetURI, meta); err != nil {
 		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.TargetURI, err)
 	}
@@ -63,20 +61,18 @@ func (p *CorePublisherRunner) publishToStorage(ctx context.Context, cfg config.P
 
 // notifyToSlack はSlackに通知を送信します。
 func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, cfg config.PublishConfig) {
-	// p.slackNotifier は NewCorePublisherRunner で注入されています
-	// 通知の実行
 	if err := p.slackNotifier.Notify(ctx, cfg.TargetURI, cfg.ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
 	}
 }
 
-// newReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
-func newReviewData(cfg config.PublishConfig) publisher.ReviewData {
+// createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
+func createReviewData(reviewCfg config.ReviewConfig, reviewResult string) publisher.ReviewData {
 	return publisher.ReviewData{
-		RepoURL:        cfg.ReviewConfig.RepoURL,
-		BaseBranch:     cfg.ReviewConfig.BaseBranch,
-		FeatureBranch:  cfg.ReviewConfig.FeatureBranch,
-		ReviewMarkdown: cfg.ReviewResult,
+		RepoURL:        reviewCfg.RepoURL,
+		BaseBranch:     reviewCfg.BaseBranch,
+		FeatureBranch:  reviewCfg.FeatureBranch,
+		ReviewMarkdown: reviewResult,
 	}
 }
