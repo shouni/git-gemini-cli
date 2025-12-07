@@ -13,7 +13,7 @@ import (
 
 // PublisherRunner は、レビュー結果の公開処理を実行する責務を持つインターフェースです。
 type PublisherRunner interface {
-	Run(ctx context.Context, cfg config.PublishConfig) error
+	Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error
 }
 
 // CorePublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
@@ -34,14 +34,14 @@ func NewCorePublisherRunner(writer publisher.Publisher, slackNotifier adapters.S
 
 // Run は公開処理のパイプライン全体を実行します。
 // このメソッドは、処理のオーケストレーションに専念します。
-func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig) error {
+func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
 	// 1. ストレージへのアップロード処理
-	if err := p.publishToStorage(ctx, cfg); err != nil {
+	if err := p.publishToStorage(ctx, cfg.TargetURI, reviewResult, cfg.ReviewConfig); err != nil {
 		return err
 	}
 
 	// 2. Slack通知処理 (アップロード成功後のみ実行)
-	p.notifyToSlack(ctx, cfg)
+	p.notifyToSlack(ctx, cfg.TargetURI, cfg.ReviewConfig)
 
 	return nil
 }
@@ -49,19 +49,19 @@ func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig)
 // --- プライベートメソッドへの分割 ---
 
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
-func (p *CorePublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig) error {
-	meta := createReviewData(cfg.ReviewConfig, cfg.ReviewResult)
-	if err := p.writer.Publish(ctx, cfg.TargetURI, meta); err != nil {
-		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.TargetURI, err)
+func (p *CorePublisherRunner) publishToStorage(ctx context.Context, targetURI, reviewResult string, reviewCfg config.ReviewConfig) error {
+	meta := createReviewData(reviewCfg, reviewResult)
+	if err := p.writer.Publish(ctx, targetURI, meta); err != nil {
+		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", targetURI, err)
 	}
 
-	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", cfg.TargetURI)
+	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", targetURI)
 	return nil
 }
 
 // notifyToSlack はSlackに通知を送信します。
-func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, cfg config.PublishConfig) {
-	if err := p.slackNotifier.Notify(ctx, cfg.TargetURI, cfg.ReviewConfig); err != nil {
+func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, targetURI string, reviewCfg config.ReviewConfig) {
+	if err := p.slackNotifier.Notify(ctx, targetURI, reviewCfg); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
 	}

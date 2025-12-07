@@ -69,8 +69,8 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 			ReviewConfig:    ReviewConfig,
 			TargetURI:       publishFlags.URL,
 			SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
-			ReviewResult:    reviewResult,
 		},
+		reviewResult,
 	)
 	// 2. パイプライン実行中にエラーが発生した場合、それを呼び出し元に返す
 	if err != nil {

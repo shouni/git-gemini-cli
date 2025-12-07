@@ -21,5 +21,4 @@ type PublishConfig struct {
 	ReviewConfig    ReviewConfig
 	TargetURI       string
 	SlackWebhookURL string
-	ReviewResult    string
 }

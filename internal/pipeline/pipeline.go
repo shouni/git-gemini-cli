@@ -50,6 +50,7 @@ func ExecuteReviewPipeline(
 func ExecutePublishPipeline(
 	ctx context.Context,
 	cfg config.PublishConfig,
+	reviewResult string,
 ) error {
 
 	// 1. クラウドストレージに保存し、そのURLを通知
@@ -57,7 +58,7 @@ func ExecutePublishPipeline(
 	if err != nil {
 		return fmt.Errorf("PublishRunnerの構築に失敗しました: %w", err)
 	}
-	err = publishRunner.Run(ctx, cfg)
+	err = publishRunner.Run(ctx, cfg, reviewResult)
 	if err != nil {
 		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)
 	}
