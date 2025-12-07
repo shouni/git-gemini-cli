@@ -17,12 +17,14 @@ type PublisherRunner interface {
 }
 
 // CorePublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
+// 依存関係（writer, slackNotifier）をDIコンテナ/builderから注入することに専念します。
 type CorePublisherRunner struct {
 	writer        publisher.Publisher
 	slackNotifier adapters.SlackNotifier
 }
 
 // NewCorePublisherRunner は CorePublisherRunner の新しいインスタンスを作成します。
+// DIコンテナ/builderはこの関数を利用して依存関係を構築します。
 func NewCorePublisherRunner(writer publisher.Publisher, slackNotifier adapters.SlackNotifier) *CorePublisherRunner {
 	return &CorePublisherRunner{
 		writer:        writer,
@@ -31,20 +33,42 @@ func NewCorePublisherRunner(writer publisher.Publisher, slackNotifier adapters.S
 }
 
 // Run は公開処理のパイプライン全体を実行します。
+// このメソッドは、処理のオーケストレーションに専念します。
 func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig) error {
-	meta := newReviewData(cfg)
-	err := p.writer.Publish(ctx, cfg.TargetURI, meta)
-	if err != nil {
+	// 1. ストレージへのアップロード処理
+	if err := p.publishToStorage(ctx, cfg); err != nil {
+		return err
+	}
+
+	// 2. Slack通知処理 (アップロード成功後のみ実行)
+	p.notifyToSlack(ctx, cfg)
+
+	return nil
+}
+
+// --- プライベートメソッドへの分割 ---
+
+// publishToStorage はレビュー結果をクラウドストレージにアップロードします。
+func (p *CorePublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig) error {
+	meta := newReviewData(cfg) // config.PublishConfigからデータ生成
+
+	// p.writer は NewCorePublisherRunner で注入されています
+	if err := p.writer.Publish(ctx, cfg.TargetURI, meta); err != nil {
 		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.TargetURI, err)
 	}
-	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", cfg.TargetURI)
 
+	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", cfg.TargetURI)
+	return nil
+}
+
+// notifyToSlack はSlackに通知を送信します。
+func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, cfg config.PublishConfig) {
+	// p.slackNotifier は NewCorePublisherRunner で注入されています
+	// 通知の実行
 	if err := p.slackNotifier.Notify(ctx, cfg.TargetURI, cfg.ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
 	}
-
-	return nil
 }
 
 // newReviewData は設定とレビュー結果から publisher.ReviewData を生成します。

@@ -44,7 +44,8 @@ func init() {
 // コマンドの実行ロジック
 // --------------------------------------------------------------------------
 
-// publishCommand は publish コマンドの実行ロジックです。
+// publishCommand は、AIによるレビュー結果を生成し、指定されたURIのクラウドストレージに
+// 公開（アップロード）と通知を行う publish コマンドの実行ロジックです。
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
