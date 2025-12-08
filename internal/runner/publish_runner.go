@@ -132,13 +132,16 @@ func convertS3URIToPublicURL(s3URI, region string) string {
 	// 最初の "/" でバケット名とオブジェクトキーに分割
 	parts := strings.SplitN(processedURI, "/", 2)
 	bucketName := parts[0]
-	objectKey := ""
+	objectKey := "/"
 
 	if len(parts) > 1 {
-		objectKey = parts[1]
+		objectKey = "/" + parts[1]
 	}
 
-	return fmt.Sprintf("https://%s.s3.%s.amazonaws.com/%s", bucketName, region, objectKey)
+	// 公開URL形式に再構成 (Path-Style Access)
+	// 形式: https://s3.{region}.amazonaws.com/{bucketName}{objectKey}
+	publicURL := fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
+	return publicURL
 }
 
 // createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
