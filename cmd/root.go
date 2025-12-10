@@ -6,7 +6,6 @@ import (
 	"git-gemini-cli/internal/config"
 	"log/slog"
 	"os"
-	"os/user"
 	"path/filepath"
 	"time"
 
@@ -67,11 +66,12 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 
 // getDefaultSSHKeyPath は、ユーザーのホームディレクトリに基づいてSSH秘密鍵のデフォルトパスを解決します。
 func getDefaultSSHKeyPath() string {
-	if u, err := user.Current(); err == nil {
-		return filepath.Join(u.HomeDir, ".ssh", "id_rsa")
+	home, err := os.UserHomeDir()
+	if err == nil {
+		return filepath.Join(home, ".ssh", "id_rsa")
 	}
-	// ユーザー情報が取得できない場合は、従来のパスを返す
-	return "~/.ssh/id_rsa"
+
+	return ""
 }
 
 // --- フラグ設定ロジック ---

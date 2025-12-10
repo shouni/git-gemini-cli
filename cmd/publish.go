@@ -50,7 +50,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	// 1. パイプラインを実行し、結果を受け取る
 	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
 	if errors.Is(err, pipeline.ErrSkipReview) {
-		slog.Warn("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URI)
+		slog.Info("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URI)
 		return nil
 	}
 	if err != nil {
