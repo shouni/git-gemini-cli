@@ -3,7 +3,7 @@ module git-gemini-cli
 go 1.25
 
 require (
-	github.com/shouni/gemini-reviewer-core v1.0.17
+	github.com/shouni/gemini-reviewer-core v1.0.19
 	github.com/shouni/go-cli-base v1.0.5
 	github.com/shouni/go-http-kit v1.1.2
 	github.com/shouni/go-notifier v1.1.4
@@ -58,7 +58,7 @@ require (
 	github.com/forPelevin/gomoji v1.4.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.6.2 // indirect
-	github.com/go-git/go-git/v5 v5.16.3 // indirect
+	github.com/go-git/go-git/v5 v5.16.4 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.2 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -77,7 +77,7 @@ require (
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
 	github.com/shouni/go-ai-client/v2 v2.0.7 // indirect
-	github.com/shouni/go-text-format v1.0.6 // indirect
+	github.com/shouni/go-text-format v1.0.7 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
 	github.com/slack-go/slack v0.17.3 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect

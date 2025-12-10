@@ -1,14 +1,15 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 	"os"
 
-	"github.com/spf13/cobra"
-
 	"git-gemini-cli/internal/config"
 	"git-gemini-cli/internal/pipeline"
+
+	"github.com/spf13/cobra"
 )
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
@@ -48,12 +49,12 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 
 	// 1. パイプラインを実行し、結果を受け取る
 	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
+	if errors.Is(err, pipeline.ErrSkipReview) {
+		slog.Info("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URI)
+		return nil
+	}
 	if err != nil {
 		return err
-	}
-	if reviewResult == "" {
-		slog.Warn("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URI)
-		return nil
 	}
 
 	httpClient, err := GetHTTPClient(ctx)

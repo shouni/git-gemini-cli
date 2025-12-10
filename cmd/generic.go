@@ -1,6 +1,7 @@
 package cmd
 
 import (
+	"errors"
 	"fmt"
 	"log/slog"
 
@@ -34,17 +35,17 @@ func genericCommand(cmd *cobra.Command, args []string) error {
 
 	// 1. パイプラインを実行し、結果を受け取る
 	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
+	if errors.Is(err, pipeline.ErrSkipReview) {
+		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
+		return nil
+	}
 	if err != nil {
 		return err
 	}
 
 	// 2. レビュー結果の出力、レビュー結果の内容が空でない場合にのみ標準出力に出力する
-	if reviewResult != "" {
-		printReviewResult(reviewResult)
-		slog.Info("レビュー結果を標準出力に出力しました。")
-	} else {
-		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
-	}
+	printReviewResult(reviewResult)
+	slog.Info("レビュー結果を標準出力に出力しました。")
 
 	return nil
 }
