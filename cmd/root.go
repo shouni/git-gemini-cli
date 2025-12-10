@@ -51,8 +51,8 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 	// 2. HTTPクライアントの初期化
 	httpClient := httpkit.New(defaultHTTPTimeout)
 
-	// フラグで指定がなく、LocalPathが空の場合に動的生成する
-	if ReviewConfig.LocalPath == "" {
+	// RepoURLが指定されている場合のみ、LocalPathの動的生成を試みる
+	if ReviewConfig.LocalPath == "" && ReviewConfig.RepoURL != "" {
 		ReviewConfig.LocalPath = urlpath.SanitizeURLToUniquePath(ReviewConfig.RepoURL, baseRepoDirName)
 		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", ReviewConfig.LocalPath)
 	}
