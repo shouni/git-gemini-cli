@@ -2,14 +2,16 @@ package pipeline
 
 import (
 	"context"
+	"errors"
 	"fmt"
+	"log/slog"
 
 	"git-gemini-cli/internal/builder"
 	"git-gemini-cli/internal/config"
-	"log/slog"
-
-	"github.com/shouni/go-utils/urlpath"
 )
+
+// ErrSkipReview は、レビュー対象の差分が存在しないためにパイプラインがスキップされたことを示すエラーです。
+var ErrSkipReview = errors.New("差分が見つからなかったためレビューをスキップしました")
 
 // ExecuteReviewPipeline は、すべての依存関係を構築し、レビューパイプラインを実行します。
 // 実行結果の文字列とエラーを返します。
@@ -17,13 +19,6 @@ func ExecuteReviewPipeline(
 	ctx context.Context,
 	cfg config.ReviewConfig,
 ) (string, error) {
-	const baseRepoDirName = "reviewerRepos"
-
-	// LocalPathが指定されていない場合、RepoURLから動的に生成しcfgを更新します。
-	if cfg.LocalPath == "" {
-		cfg.LocalPath = urlpath.SanitizeURLToUniquePath(cfg.RepoURL, baseRepoDirName)
-		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", cfg.LocalPath)
-	}
 
 	reviewRunner, err := builder.BuildReviewRunner(ctx, cfg)
 	if err != nil {
@@ -39,8 +34,8 @@ func ExecuteReviewPipeline(
 	}
 
 	if reviewResult == "" {
-		slog.Info("Diff がないためレビューをスキップしました。")
-		return "", nil
+		slog.Info(ErrSkipReview.Error())
+		return "", ErrSkipReview
 	}
 
 	return reviewResult, nil
