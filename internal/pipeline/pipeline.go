@@ -62,7 +62,7 @@ func Publish(
 }
 
 // ReviewAndPublish は、レビューと公開処理を統合して実行します。
-// レビューがスキップされた場合もエラーを返さず、正常に終了します。
+// レビューがスキップされた場合は、ErrSkipReview を返します。
 func ReviewAndPublish(ctx context.Context, cfg config.PublishConfig) error {
 
 	// レビューパイプラインの実行
