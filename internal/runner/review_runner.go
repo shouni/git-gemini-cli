@@ -75,7 +75,7 @@ func (r *DefaultReviewRunner) Run(
 	slog.Info("Git差分の取得に成功しました。", "size_bytes", len(codeDiff))
 
 	// プロンプトの生成
-	slog.InfoContext(ctx, "3. AIプロンプトを生成中...", "mode", cfg.ReviewMode)
+	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
 	templateData := prompts.TemplateData{DiffContent: codeDiff}
 	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, templateData)
 	if err != nil {
