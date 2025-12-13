@@ -67,15 +67,8 @@ func ReviewAndPublish(ctx context.Context, cfg config.PublishConfig) error {
 
 	// レビューパイプラインの実行
 	reviewResult, err := Review(ctx, cfg.ReviewConfig)
-
-	// レビューパイプラインがスキップエラーを返した場合、公開処理をスキップして正常終了
-	if errors.Is(err, ErrSkipReview) {
-		// 明示的にスキップ理由をログに残す
-		slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", cfg.StorageURI)
-		return nil
-	}
 	if err != nil {
-		return fmt.Errorf("レビューパイプラインの実行に失敗: %w", err)
+		return err
 	}
 
 	// 公開パイプラインの実行
