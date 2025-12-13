@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 	"os"
@@ -47,37 +46,24 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// 1. パイプラインを実行し、結果を受け取る
-	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
-	if errors.Is(err, pipeline.ErrSkipReview) {
-		slog.Info("レビュー結果の内容が空のため、ストレージへの保存をスキップします。", "uri", publishFlags.URI)
-		return nil
-	}
-	if err != nil {
-		return err
-	}
-
 	httpClient, err := GetHTTPClient(ctx)
 	if err != nil {
 		return fmt.Errorf("HTTPクライアントの取得に失敗しました: %w", err)
 	}
 
-	// 2. 公開パイプラインを実行し、結果を受け取る
-	err = pipeline.ExecutePublishPipeline(
-		ctx,
-		config.PublishConfig{
-			HttpClient:      httpClient,
-			ReviewConfig:    ReviewConfig,
-			StorageURI:      publishFlags.URI,
-			SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
-		},
-		reviewResult,
-	)
-	// 2. パイプライン実行中にエラーが発生した場合、それを呼び出し元に返す
-	if err != nil {
-		return fmt.Errorf("公開パイプラインの実行に失敗しました: %w", err)
+	// パイプラインを実行し、結果を受け取る
+	publishCfg := config.PublishConfig{
+		HttpClient:      httpClient,
+		ReviewConfig:    ReviewConfig,
+		StorageURI:      publishFlags.URI,
+		SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
 	}
-	slog.Info("処理完了", "uri", publishFlags.URI)
+
+	if err := pipeline.ExecuteReviewAndPublishPipeline(ctx, publishCfg); err != nil {
+		return fmt.Errorf("レビューおよび公開パイプラインの実行に失敗しました: %w", err)
+	}
+
+	slog.Info("処理完了", "uri", publishCfg.StorageURI)
 
 	return nil
 }
