@@ -24,9 +24,9 @@ type DefaultReviewRunner struct {
 	promptBuilder prompts.ReviewPromptBuilder
 }
 
-// NewReviewRunner は DefaultReviewRunner の新しいインスタンスを生成します。
+// NewDefaultReviewRunner は DefaultReviewRunner の新しいインスタンスを生成します。
 // 依存関係はコンストラクタ経由で注入されます。
-func NewReviewRunner(
+func NewDefaultReviewRunner(
 	git adapters.GitService,
 	gemini adapters.CodeReviewAI,
 	pb prompts.ReviewPromptBuilder,

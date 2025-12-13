@@ -33,9 +33,9 @@ type DefaultPublisherRunner struct {
 	slackNotifier adapters.SlackNotifier
 }
 
-// NewPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
+// NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
 // DIコンテナ/builderはこの関数を利用して依存関係を構築します。
-func NewPublisherRunner(writer publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
+func NewDefaultPublisherRunner(writer publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
 	return &DefaultPublisherRunner{
 		writer:        writer,
 		urlSigner:     urlSigner,
