@@ -65,15 +65,13 @@ func Publish(
 // レビューがスキップされた場合は、ErrSkipReview を返します。
 func ReviewAndPublish(ctx context.Context, cfg config.PublishConfig) error {
 
-	// レビューパイプラインの実行
 	reviewResult, err := Review(ctx, cfg.ReviewConfig)
 	if err != nil {
 		return err
 	}
 
-	// 公開パイプラインの実行
 	if err := Publish(ctx, cfg, reviewResult); err != nil {
-		return fmt.Errorf("公開パイプラインの実行に失敗: %w", err)
+		return err
 	}
 
 	return nil
