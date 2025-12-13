@@ -59,7 +59,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
 	}
 
-	if err := pipeline.ExecuteReviewAndPublishPipeline(ctx, publishCfg); err != nil {
+	if err := pipeline.ReviewAndPublish(ctx, publishCfg); err != nil {
 		return fmt.Errorf("レビューおよび公開パイプラインの実行に失敗しました: %w", err)
 	}
 

@@ -34,7 +34,7 @@ func genericCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	// 1. パイプラインを実行し、結果を受け取る
-	reviewResult, err := pipeline.ExecuteReviewPipeline(ctx, ReviewConfig)
+	reviewResult, err := pipeline.Review(ctx, ReviewConfig)
 	if errors.Is(err, pipeline.ErrSkipReview) {
 		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
 		return nil

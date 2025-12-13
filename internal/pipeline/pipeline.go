@@ -13,9 +13,9 @@ import (
 // ErrSkipReview は、レビュー対象の差分が存在しないためにパイプラインがスキップされたことを示すエラーです。
 var ErrSkipReview = errors.New("差分が見つからなかったためレビューをスキップしました")
 
-// ExecuteReviewPipeline は、すべての依存関係を構築し、レビューパイプラインを実行します。
+// Review は、すべての依存関係を構築し、レビューパイプラインを実行します。
 // 実行結果の文字列とエラーを返します。
-func ExecuteReviewPipeline(
+func Review(
 	ctx context.Context,
 	cfg config.ReviewConfig,
 ) (string, error) {
@@ -41,14 +41,14 @@ func ExecuteReviewPipeline(
 	return reviewResult, nil
 }
 
-// ExecutePublishPipeline は、すべての依存関係を構築し、パブリッシュパイプラインを実行します。
-func ExecutePublishPipeline(
+// Publish は、すべての依存関係を構築し、パブリッシュパイプラインを実行します。
+func Publish(
 	ctx context.Context,
 	cfg config.PublishConfig,
 	reviewResult string,
 ) error {
 
-	// 1. クラウドストレージに保存し、そのURLを通知
+	// クラウドストレージに保存し、そのURLを通知
 	publishRunner, err := builder.BuildPublishRunner(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("PublishRunnerの構築に失敗しました: %w", err)
@@ -61,24 +61,25 @@ func ExecutePublishPipeline(
 	return nil
 }
 
-// ExecuteReviewAndPublishPipeline は、レビューと公開処理を統合して実行します。
+// ReviewAndPublish は、レビューと公開処理を統合して実行します。
 // レビューがスキップされた場合もエラーを返さず、正常に終了します。
-func ExecuteReviewAndPublishPipeline(ctx context.Context, cfg config.PublishConfig) error {
+func ReviewAndPublish(ctx context.Context, cfg config.PublishConfig) error {
 
-	// 1. レビューパイプラインの実行
-	reviewResult, err := ExecuteReviewPipeline(ctx, cfg.ReviewConfig)
+	// レビューパイプラインの実行
+	reviewResult, err := Review(ctx, cfg.ReviewConfig)
 
 	// レビューパイプラインがスキップエラーを返した場合、公開処理をスキップして正常終了
 	if errors.Is(err, ErrSkipReview) {
-		// ロギングは ExecuteReviewPipeline 内で行われているため、ここでは何もしない
+		// 明示的にスキップ理由をログに残す
+		slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", cfg.StorageURI)
 		return nil
 	}
 	if err != nil {
 		return fmt.Errorf("レビューパイプラインの実行に失敗: %w", err)
 	}
 
-	// 2. 公開パイプラインの実行
-	if err := ExecutePublishPipeline(ctx, cfg, reviewResult); err != nil {
+	// 公開パイプラインの実行
+	if err := Publish(ctx, cfg, reviewResult); err != nil {
 		return fmt.Errorf("公開パイプラインの実行に失敗: %w", err)
 	}
 
