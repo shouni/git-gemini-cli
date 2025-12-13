@@ -52,7 +52,7 @@ func buildGeminiService(ctx context.Context, cfg config.ReviewConfig) (adapters.
 
 // BuildReviewRunner は、必要な依存関係をすべて構築し、
 // 実行可能な ReviewRunner のインスタンスを返します。
-func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (*runner.ReviewRunner, error) {
+func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.ReviewRunner, error) {
 	// 1. GitService の構築
 	gitService := buildGitService(cfg)
 	slog.Debug("GitService (Adapter) を構築しました。",
@@ -75,7 +75,7 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (*runner.Re
 	slog.Debug("PromptBuilderを構築しました。", slog.String("component", "PromptBuilder"))
 
 	// 4. 依存関係を注入して Runner を組み立てる
-	reviewRunner := runner.NewReviewRunner(
+	reviewRunner := runner.NewDefaultReviewRunner(
 		gitService,
 		geminiService,
 		promptBuilder,
@@ -102,7 +102,7 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	)
 
 	// 3. 依存関係を注入して Runner を組み立てる
-	publicRunner := runner.NewCorePublisherRunner(
+	publicRunner := runner.NewDefaultPublisherRunner(
 		writer,
 		urlSigner,
 		slackNotifier,

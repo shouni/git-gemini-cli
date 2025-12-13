@@ -25,18 +25,18 @@ type PublisherRunner interface {
 	Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error
 }
 
-// CorePublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
+// DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
 // 依存関係（writer, slackNotifier）をDIコンテナ/builderから注入することに専念します。
-type CorePublisherRunner struct {
+type DefaultPublisherRunner struct {
 	writer        publisher.Publisher
 	urlSigner     remoteio.URLSigner
 	slackNotifier adapters.SlackNotifier
 }
 
-// NewCorePublisherRunner は CorePublisherRunner の新しいインスタンスを作成します。
+// NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
 // DIコンテナ/builderはこの関数を利用して依存関係を構築します。
-func NewCorePublisherRunner(writer publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *CorePublisherRunner {
-	return &CorePublisherRunner{
+func NewDefaultPublisherRunner(writer publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
+	return &DefaultPublisherRunner{
 		writer:        writer,
 		urlSigner:     urlSigner,
 		slackNotifier: slackNotifier,
@@ -45,7 +45,7 @@ func NewCorePublisherRunner(writer publisher.Publisher, urlSigner remoteio.URLSi
 
 // Run は公開処理のパイプライン全体を実行します。
 // このメソッドは、処理のオーケストレーションに専念します。
-func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
+func (p *DefaultPublisherRunner) Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
 	// 1. ストレージへのアップロード処理
 	if err := p.publishToStorage(ctx, cfg, reviewResult); err != nil {
 		return err
@@ -69,7 +69,7 @@ func (p *CorePublisherRunner) Run(ctx context.Context, cfg config.PublishConfig,
 // --- プライベートメソッドへの分割 ---
 
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
-func (p *CorePublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
+func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
 	meta := createReviewData(cfg.ReviewConfig, reviewResult)
 	if err := p.writer.Publish(ctx, cfg.StorageURI, meta); err != nil {
 		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.StorageURI, err)
@@ -80,7 +80,7 @@ func (p *CorePublisherRunner) publishToStorage(ctx context.Context, cfg config.P
 }
 
 // notifyToSlack はSlackに通知を送信します。
-func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, publicURL string, cfg config.PublishConfig) {
+func (p *DefaultPublisherRunner) notifyToSlack(ctx context.Context, publicURL string, cfg config.PublishConfig) {
 	if err := p.slackNotifier.Notify(ctx, publicURL, cfg.StorageURI, cfg.ReviewConfig); err != nil {
 		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
@@ -88,7 +88,7 @@ func (p *CorePublisherRunner) notifyToSlack(ctx context.Context, publicURL strin
 }
 
 // getPublicURL は URI に応じて署名付きURLを生成するか、公開URLに変換します。
-func (p *CorePublisherRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
+func (p *DefaultPublisherRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
 	if p.urlSigner == nil {
 		// urlSignerがnilの場合、URIは署名が必要ないか、サポートされていないスキームです。
 		slog.Debug("URL Signerがnilです。静的なURI変換のみを試みます。", "uri", storageURI)

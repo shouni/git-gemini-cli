@@ -11,22 +11,27 @@ import (
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 )
 
-// ReviewRunner はコードレビューのビジネスロジックを実行します。
+// ReviewRunner は、コードレビューのビジネスロジックを実行し、レビュー結果を生成するインターフェースです。
+type ReviewRunner interface {
+	Run(ctx context.Context, cfg config.ReviewConfig) (string, error)
+}
+
+// DefaultReviewRunner はコードレビューのビジネスロジックを実行します。
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
-type ReviewRunner struct {
+type DefaultReviewRunner struct {
 	gitService    adapters.GitService
 	geminiService adapters.CodeReviewAI
 	promptBuilder prompts.ReviewPromptBuilder
 }
 
-// NewReviewRunner は ReviewRunner の新しいインスタンスを生成します。
+// NewDefaultReviewRunner は DefaultReviewRunner の新しいインスタンスを生成します。
 // 依存関係はコンストラクタ経由で注入されます。
-func NewReviewRunner(
+func NewDefaultReviewRunner(
 	git adapters.GitService,
 	gemini adapters.CodeReviewAI,
 	pb prompts.ReviewPromptBuilder,
-) *ReviewRunner {
-	return &ReviewRunner{
+) *DefaultReviewRunner {
+	return &DefaultReviewRunner{
 		gitService:    git,
 		geminiService: gemini,
 		promptBuilder: pb,
@@ -34,7 +39,7 @@ func NewReviewRunner(
 }
 
 // Run はGit Diffを取得し、Gemini AIでレビューを実行します。
-func (r *ReviewRunner) Run(
+func (r *DefaultReviewRunner) Run(
 	ctx context.Context,
 	cfg config.ReviewConfig,
 ) (string, error) {
