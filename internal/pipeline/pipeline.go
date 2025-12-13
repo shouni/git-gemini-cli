@@ -26,8 +26,6 @@ func Review(
 		return "", fmt.Errorf("レビュー実行器の構築に失敗しました: %w", err)
 	}
 
-	slog.Info("レビューパイプラインを開始します。")
-
 	reviewResult, err := reviewRunner.Run(ctx, cfg)
 	if err != nil {
 		return "", err
