@@ -26,12 +26,12 @@ const (
 // clientKey は context.Context に httpkit.Client を格納・取得するための非公開キー
 type clientKey struct{}
 
-// GetHTTPClient は、cmd.Context() から *httpkit.Client を取り出す公開関数です。
+// GetHTTPClient は、cmd.Context() から httpkit.ClientInterface を取り出す公開関数です。
 func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
 	if client, ok := ctx.Value(clientKey{}).(httpkit.ClientInterface); ok {
 		return client, nil
 	}
-	return nil, fmt.Errorf("contextからhttpkit.Clientを取得できませんでした。rootコマンドの初期化を確認してください。")
+	return nil, fmt.Errorf("contextからhttpkit.ClientInterfaceを取得できませんでした。rootコマンドの初期化を確認してください。")
 }
 
 // initAppPreRunE は、アプリケーション固有のPersistentPreRunEです。
@@ -88,6 +88,9 @@ func addAppPersistentFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.SSHKeyPath, "ssh-key-path", "k", defaultSSHKeyPath, "Git 認証に使用する SSH 秘密鍵のパス。")
 	rootCmd.PersistentFlags().BoolVar(&ReviewConfig.SkipHostKeyCheck, "skip-host-key-check", false, "【🚨 危険な設定】 SSH ホストキーの検証を無効にします。中間者攻撃のリスクを劇的に高めるため、本番環境では絶対に使用しないでください。開発/テスト環境でのみ使用してください。")
 	rootCmd.PersistentFlags().BoolVar(&ReviewConfig.UseExternalGitCommand, "use-external-git-command", true, "Go実装の内部アダプターではなく、外部のローカルGitコマンド（git）を使用してリポジトリを操作します。")
+
+	rootCmd.MarkPersistentFlagRequired("repo-url")
+	rootCmd.MarkPersistentFlagRequired("feature-branch")
 }
 
 // --- エントリポイント ---

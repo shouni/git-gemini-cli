@@ -33,9 +33,6 @@ func init() {
 	publishCmd.Flags().StringVarP(&publishFlags.URI, "uri", "s", "", "保存先のURI (例: gs://bucket/result.html, s3://bucket/result.html)")
 	// URIフラグは必須にする
 	publishCmd.MarkFlagRequired("uri")
-
-	publishCmd.MarkPersistentFlagRequired("repo-url")
-	publishCmd.MarkPersistentFlagRequired("feature-branch")
 }
 
 // --------------------------------------------------------------------------

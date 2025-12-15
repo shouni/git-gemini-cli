@@ -19,11 +19,6 @@ var genericCmd = &cobra.Command{
 	RunE:  genericCommand,
 }
 
-func init() {
-	genericCmd.MarkPersistentFlagRequired("repo-url")
-	genericCmd.MarkPersistentFlagRequired("feature-branch")
-}
-
 // --------------------------------------------------------------------------
 // コマンドの実行ロジック
 // --------------------------------------------------------------------------
