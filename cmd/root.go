@@ -27,8 +27,8 @@ const (
 type clientKey struct{}
 
 // GetHTTPClient は、cmd.Context() から *httpkit.Client を取り出す公開関数です。
-func GetHTTPClient(ctx context.Context) (*httpkit.Client, error) {
-	if client, ok := ctx.Value(clientKey{}).(*httpkit.Client); ok {
+func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
+	if client, ok := ctx.Value(clientKey{}).(httpkit.ClientInterface); ok {
 		return client, nil
 	}
 	return nil, fmt.Errorf("contextからhttpkit.Clientを取得できませんでした。rootコマンドの初期化を確認してください。")
