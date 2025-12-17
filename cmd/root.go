@@ -7,6 +7,7 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
+	"strings"
 	"time"
 
 	"github.com/shouni/go-cli-base"
@@ -31,13 +32,22 @@ func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
 	if client, ok := ctx.Value(clientKey{}).(httpkit.ClientInterface); ok {
 		return client, nil
 	}
-	return nil, fmt.Errorf("contextからhttpkit.ClientInterfaceを取得できませんでした。rootコマンドの初期化を確認してください。")
+	return nil, fmt.Errorf("contextからhttpkit.ClientInterfaceを取得できませんでした。")
 }
 
 // initAppPreRunE は、アプリケーション固有のPersistentPreRunEです。
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
 
-	// 1. slog ハンドラの設定
+	// ユーザー入力の前後にある余計なスペースを除去
+	ReviewConfig.RepoURL = strings.TrimSpace(ReviewConfig.RepoURL)
+	ReviewConfig.BaseBranch = strings.TrimSpace(ReviewConfig.BaseBranch)
+	ReviewConfig.FeatureBranch = strings.TrimSpace(ReviewConfig.FeatureBranch)
+	ReviewConfig.LocalPath = strings.TrimSpace(ReviewConfig.LocalPath)
+	ReviewConfig.ReviewMode = strings.TrimSpace(ReviewConfig.ReviewMode)
+	ReviewConfig.GeminiModel = strings.TrimSpace(ReviewConfig.GeminiModel)
+	ReviewConfig.SSHKeyPath = strings.TrimSpace(ReviewConfig.SSHKeyPath)
+
+	// slog ハンドラの設定
 	logLevel := slog.LevelInfo
 	if clibase.Flags.Verbose {
 		logLevel = slog.LevelDebug
@@ -48,7 +58,7 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 	})
 	slog.SetDefault(slog.New(handler))
 
-	// 2. HTTPクライアントの初期化
+	// HTTPクライアントの初期化
 	httpClient := httpkit.New(defaultHTTPTimeout)
 
 	// RepoURLが指定されている場合のみ、LocalPathの動的生成を試みる
