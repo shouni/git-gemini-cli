@@ -28,15 +28,15 @@ type PublishConfig struct {
 }
 
 // Normalize は設定値の文字列フィールドから前後の空白を一括で削除します。
-func (c *ReviewConfig) Normalize() {
-	if c == nil {
+func (rc *ReviewConfig) Normalize() {
+	if rc == nil {
 		return
 	}
-	c.RepoURL = strings.TrimSpace(c.RepoURL)
-	c.BaseBranch = strings.TrimSpace(c.BaseBranch)
-	c.FeatureBranch = strings.TrimSpace(c.FeatureBranch)
-	c.LocalPath = strings.TrimSpace(c.LocalPath)
-	c.ReviewMode = strings.TrimSpace(c.ReviewMode)
-	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
-	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
+	rc.RepoURL = strings.TrimSpace(rc.RepoURL)
+	rc.BaseBranch = strings.TrimSpace(rc.BaseBranch)
+	rc.FeatureBranch = strings.TrimSpace(rc.FeatureBranch)
+	rc.LocalPath = strings.TrimSpace(rc.LocalPath)
+	rc.ReviewMode = strings.TrimSpace(rc.ReviewMode)
+	rc.GeminiModel = strings.TrimSpace(rc.GeminiModel)
+	rc.SSHKeyPath = strings.TrimSpace(rc.SSHKeyPath)
 }
