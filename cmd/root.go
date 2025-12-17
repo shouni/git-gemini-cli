@@ -3,11 +3,12 @@ package cmd
 import (
 	"context"
 	"errors"
-	"git-gemini-cli/internal/config"
 	"log/slog"
 	"os"
 	"path/filepath"
 	"time"
+
+	"git-gemini-cli/internal/config"
 
 	"github.com/shouni/go-cli-base"
 	"github.com/shouni/go-http-kit/pkg/httpkit"
