@@ -39,13 +39,19 @@ func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
 
 	// ユーザー入力の前後にある余計なスペースを除去
-	ReviewConfig.RepoURL = strings.TrimSpace(ReviewConfig.RepoURL)
-	ReviewConfig.BaseBranch = strings.TrimSpace(ReviewConfig.BaseBranch)
-	ReviewConfig.FeatureBranch = strings.TrimSpace(ReviewConfig.FeatureBranch)
-	ReviewConfig.LocalPath = strings.TrimSpace(ReviewConfig.LocalPath)
-	ReviewConfig.ReviewMode = strings.TrimSpace(ReviewConfig.ReviewMode)
-	ReviewConfig.GeminiModel = strings.TrimSpace(ReviewConfig.GeminiModel)
-	ReviewConfig.SSHKeyPath = strings.TrimSpace(ReviewConfig.SSHKeyPath)
+	stringFields := []*string{
+		&ReviewConfig.RepoURL,
+		&ReviewConfig.BaseBranch,
+		&ReviewConfig.FeatureBranch,
+		&ReviewConfig.LocalPath,
+		&ReviewConfig.ReviewMode,
+		&ReviewConfig.GeminiModel,
+		&ReviewConfig.SSHKeyPath,
+	}
+
+	for _, field := range stringFields {
+		*field = strings.TrimSpace(*field)
+	}
 
 	// slog ハンドラの設定
 	logLevel := slog.LevelInfo
