@@ -7,7 +7,6 @@ import (
 	"log/slog"
 	"os"
 	"path/filepath"
-	"strings"
 	"time"
 
 	"github.com/shouni/go-cli-base"
@@ -39,19 +38,7 @@ func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
 
 	// ユーザー入力の前後にある余計なスペースを除去
-	stringFields := []*string{
-		&ReviewConfig.RepoURL,
-		&ReviewConfig.BaseBranch,
-		&ReviewConfig.FeatureBranch,
-		&ReviewConfig.LocalPath,
-		&ReviewConfig.ReviewMode,
-		&ReviewConfig.GeminiModel,
-		&ReviewConfig.SSHKeyPath,
-	}
-
-	for _, field := range stringFields {
-		*field = strings.TrimSpace(*field)
-	}
+	ReviewConfig.Normalize()
 
 	// slog ハンドラの設定
 	logLevel := slog.LevelInfo
