@@ -1,6 +1,7 @@
 package config
 
 import (
+	"reflect"
 	"strings"
 
 	"github.com/shouni/go-http-kit/pkg/httpkit"
@@ -27,13 +28,16 @@ type PublishConfig struct {
 	SlackWebhookURL string
 }
 
-// Normalize は設定値の文字列フィールドから前後の空白を一括で削除します。
+// Normalize はリフレクションを用いて設定値の文字列フィールドから前後の空白を一括で削除します。
 func (c *ReviewConfig) Normalize() {
-	c.RepoURL = strings.TrimSpace(c.RepoURL)
-	c.BaseBranch = strings.TrimSpace(c.BaseBranch)
-	c.FeatureBranch = strings.TrimSpace(c.FeatureBranch)
-	c.LocalPath = strings.TrimSpace(c.LocalPath)
-	c.ReviewMode = strings.TrimSpace(c.ReviewMode)
-	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
-	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
+	v := reflect.ValueOf(c).Elem()
+
+	for i := 0; i < v.NumField(); i++ {
+		field := v.Field(i)
+		// フィールドが文字列型で、かつ設定可能な場合のみ処理
+		if field.Type().Kind() == reflect.String && field.CanSet() {
+			trimmedValue := strings.TrimSpace(field.String())
+			field.SetString(trimmedValue)
+		}
+	}
 }

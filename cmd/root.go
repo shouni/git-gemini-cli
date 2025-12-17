@@ -2,7 +2,7 @@ package cmd
 
 import (
 	"context"
-	"fmt"
+	"errors"
 	"git-gemini-cli/internal/config"
 	"log/slog"
 	"os"
@@ -26,12 +26,15 @@ const (
 // clientKey は context.Context に httpkit.Client を格納・取得するための非公開キー
 type clientKey struct{}
 
+// ErrHTTPClientNotFound は、contextからHTTPクライアントが見つからない場合に返されるエラーです。
+var ErrHTTPClientNotFound = errors.New("contextからhttpkit.ClientInterfaceを取得できませんでした")
+
 // GetHTTPClient は、cmd.Context() から httpkit.ClientInterface を取り出す公開関数です。
 func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
 	if client, ok := ctx.Value(clientKey{}).(httpkit.ClientInterface); ok {
 		return client, nil
 	}
-	return nil, fmt.Errorf("contextからhttpkit.ClientInterfaceを取得できませんでした。")
+	return nil, ErrHTTPClientNotFound
 }
 
 // initAppPreRunE は、アプリケーション固有のPersistentPreRunEです。
