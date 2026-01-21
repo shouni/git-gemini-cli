@@ -100,7 +100,7 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	if err != nil {
 		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
 	}
-	publisherService, err := publisher.NewPublisher(ctx, ioFactory, htmlRunner)
+	publisher, err := publisher.NewPublisher(ctx, ioFactory, htmlRunner)
 	if err != nil {
 		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.StorageURI, err)
 	}
@@ -119,7 +119,7 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 
 	// 3. 依存関係を注入して Runner を組み立てる
 	publicRunner := runner.NewDefaultPublisherRunner(
-		publisherService,
+		publisher,
 		urlSigner,
 		slackNotifier,
 	)
