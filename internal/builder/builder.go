@@ -43,10 +43,11 @@ func buildGitService(cfg config.ReviewConfig) adapters.GitService {
 // buildCodeReviewAI は adapters.CodeReviewAI のインスタンスを構築します。
 // この関数は BuildReviewRunner の内部ヘルパーとして使用されます。
 func buildCodeReviewAI(ctx context.Context, cfg config.ReviewConfig) (adapters.CodeReviewAI, error) {
-	// 将来的にはconfigでAIを分けれるように
+	// TODO: 設定ファイル(config)でAIプロバイダー(例: "gemini", "openai")を切り替えられるように、
+	// ファクトリパターンを導入してアダプターの生成ロジックを拡張する。
 	codeReviewAI, err := adapters.NewGeminiAdapter(ctx, cfg.GeminiModel)
 	if err != nil {
-		return nil, fmt.Errorf("GeminiAdapter の構築に失敗しました: %w", err)
+		return nil, fmt.Errorf("CodeReviewAIアダプターの構築に失敗しました: %w", err)
 	}
 
 	return codeReviewAI, nil
