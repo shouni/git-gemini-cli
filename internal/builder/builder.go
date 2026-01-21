@@ -40,15 +40,17 @@ func buildGitService(cfg config.ReviewConfig) adapters.GitService {
 	)
 }
 
-// buildGeminiService は adapters.CodeReviewAI のインスタンスを構築します。
+// buildCodeReviewAI は adapters.CodeReviewAI のインスタンスを構築します。
 // この関数は BuildReviewRunner の内部ヘルパーとして使用されます。
-func buildGeminiService(ctx context.Context, cfg config.ReviewConfig) (adapters.CodeReviewAI, error) {
-	geminiService, err := adapters.NewGeminiAdapter(ctx, cfg.GeminiModel)
+func buildCodeReviewAI(ctx context.Context, cfg config.ReviewConfig) (adapters.CodeReviewAI, error) {
+	// TODO: 設定ファイル(config)でAIプロバイダー(例: "gemini", "openai")を切り替えられるように、
+	// ファクトリパターンを導入してアダプターの生成ロジックを拡張する。
+	codeReviewAI, err := adapters.NewGeminiAdapter(ctx, cfg.GeminiModel)
 	if err != nil {
-		return nil, fmt.Errorf("Gemini Service の構築に失敗しました: %w", err)
+		return nil, fmt.Errorf("CodeReviewAIアダプターの構築に失敗しました: %w", err)
 	}
 
-	return geminiService, nil
+	return codeReviewAI, nil
 }
 
 // BuildReviewRunner は、必要な依存関係をすべて構築し、
@@ -62,7 +64,7 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 	)
 
 	// 2. GeminiService の構築
-	geminiService, err := buildGeminiService(ctx, cfg)
+	codeReviewAI, err := buildCodeReviewAI(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
@@ -78,7 +80,7 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 	// 4. 依存関係を注入して Runner を組み立てる
 	reviewRunner := runner.NewDefaultReviewRunner(
 		gitService,
-		geminiService,
+		codeReviewAI,
 		promptBuilder,
 	)
 

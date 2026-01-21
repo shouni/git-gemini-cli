@@ -20,7 +20,7 @@ type ReviewRunner interface {
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
 type DefaultReviewRunner struct {
 	gitService    adapters.GitService
-	geminiService adapters.CodeReviewAI
+	codeReviewAI  adapters.CodeReviewAI
 	promptBuilder prompts.ReviewPromptBuilder
 }
 
@@ -28,12 +28,12 @@ type DefaultReviewRunner struct {
 // 依存関係はコンストラクタ経由で注入されます。
 func NewDefaultReviewRunner(
 	git adapters.GitService,
-	gemini adapters.CodeReviewAI,
+	codeReviewAI adapters.CodeReviewAI,
 	pb prompts.ReviewPromptBuilder,
 ) *DefaultReviewRunner {
 	return &DefaultReviewRunner{
 		gitService:    git,
-		geminiService: gemini,
+		codeReviewAI:  codeReviewAI,
 		promptBuilder: pb,
 	}
 }
@@ -83,10 +83,10 @@ func (r *DefaultReviewRunner) Run(
 	}
 
 	// AIレビューの実行
-	slog.Info("Gemini AIによるコードレビューを開始します。", "model", cfg.GeminiModel)
+	slog.Info("AIによるコードレビューを開始します。", "model", cfg.GeminiModel)
 
 	// Gemini Adapterにレビューを依頼
-	reviewResult, err := r.geminiService.ReviewCodeDiff(ctx, finalPrompt)
+	reviewResult, err := r.codeReviewAI.ReviewCodeDiff(ctx, finalPrompt)
 	if err != nil {
 		return "", fmt.Errorf("AIレビューの実行に失敗しました: %w", err)
 	}
