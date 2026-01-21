@@ -28,18 +28,18 @@ type PublisherRunner interface {
 // DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
 // 依存関係（writer, slackNotifier）をDIコンテナ/builderから注入することに専念します。
 type DefaultPublisherRunner struct {
-	publisherService publisher.Publisher
-	urlSigner        remoteio.URLSigner
-	slackNotifier    adapters.SlackNotifier
+	publisher     publisher.Publisher
+	urlSigner     remoteio.URLSigner
+	slackNotifier adapters.SlackNotifier
 }
 
 // NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
 // DIコンテナ/builderはこの関数を利用して依存関係を構築します。
 func NewDefaultPublisherRunner(publisherService publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
 	return &DefaultPublisherRunner{
-		publisherService: publisherService,
-		urlSigner:        urlSigner,
-		slackNotifier:    slackNotifier,
+		publisher:     publisherService,
+		urlSigner:     urlSigner,
+		slackNotifier: slackNotifier,
 	}
 }
 
@@ -71,7 +71,7 @@ func (p *DefaultPublisherRunner) Run(ctx context.Context, cfg config.PublishConf
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
 func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
 	meta := createReviewData(cfg.ReviewConfig, reviewResult)
-	if err := p.publisherService.Publish(ctx, cfg.StorageURI, meta); err != nil {
+	if err := p.publisher.Publish(ctx, cfg.StorageURI, meta); err != nil {
 		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.StorageURI, err)
 	}
 
