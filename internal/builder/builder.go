@@ -13,6 +13,7 @@ import (
 	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
+	"github.com/shouni/go-remote-io/pkg/gcsfactory"
 )
 
 // buildGitService は adapters.GitService のインスタンスを構築する Factory 関数です。
@@ -89,10 +90,25 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 // runner.PublisherRunner (インターフェース) を返します。
 func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.PublisherRunner, error) {
 
+	ioFactory, err := gcsfactory.New(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("go-remote-io gcsFactoryの初期化に失敗: %w", err)
+	}
+
 	// 1. PublisherとSignerの初期化 (マルチクラウド対応)
-	writer, urlSigner, err := publisher.NewPublisherAndSigner(ctx, cfg.StorageURI)
+	htmlRunner, err := publisher.NewMarkdownToHtmlRunner(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
+	}
+	publisherService, err := publisher.NewPublisher(ctx, ioFactory, htmlRunner)
 	if err != nil {
 		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.StorageURI, err)
+	}
+	slog.Debug("Publisher を構築しました。")
+
+	urlSigner, err := ioFactory.URLSigner()
+	if err != nil {
+		return nil, fmt.Errorf("URLSignerの初期化に失敗しました: %w", err)
 	}
 
 	// 2. Slackアダプターの構築
@@ -103,7 +119,7 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 
 	// 3. 依存関係を注入して Runner を組み立てる
 	publicRunner := runner.NewDefaultPublisherRunner(
-		writer,
+		publisherService,
 		urlSigner,
 		slackNotifier,
 	)
