@@ -3,7 +3,7 @@ module git-gemini-cli
 go 1.25
 
 require (
-	github.com/shouni/clibase v1.0.0
+	github.com/shouni/clibase v1.0.2
 	github.com/shouni/gemini-reviewer-core v1.1.1
 	github.com/shouni/go-http-kit v1.1.2
 	github.com/shouni/go-notifier v1.1.4

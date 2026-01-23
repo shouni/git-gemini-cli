@@ -176,8 +176,8 @@ github.com/rogpeppe/go-internal v1.14.1/go.mod h1:MaRKkUm5W0goXpeCfT7UZI6fk/L7L7
 github.com/russross/blackfriday/v2 v2.1.0/go.mod h1:+Rmxgy9KzJVeS9/2gXHxylqXiyQDYRxCVz55jmeOWTM=
 github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 h1:n661drycOFuPLCN3Uc8sB6B/s6Z4t2xvBgU1htSHuq8=
 github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3/go.mod h1:A0bzQcvG0E7Rwjx0REVgAGH58e96+X0MeOfepqsbeW4=
-github.com/shouni/clibase v1.0.0 h1:K4tkknuP68o2Dq7FOxnnCOKAPIlURPEmToXFYvsj7oc=
-github.com/shouni/clibase v1.0.0/go.mod h1:Qltc9svQ8aKr1kAkIUDKsfDU1v4aMK9eC+iiXbJ/VnY=
+github.com/shouni/clibase v1.0.2 h1:E4GsBKPpbgkb5jHqp0AQ/bXIR1tlgXXlhUDUqBO/n70=
+github.com/shouni/clibase v1.0.2/go.mod h1:Qltc9svQ8aKr1kAkIUDKsfDU1v4aMK9eC+iiXbJ/VnY=
 github.com/shouni/gemini-reviewer-core v1.1.1 h1:IndhMKF/sVppFcHX+vnAFnwymlDx0Tbo+PtAASQluWs=
 github.com/shouni/gemini-reviewer-core v1.1.1/go.mod h1:Pf/86zCtFj3Ob5BpqZw8V7Gi/tq5WNPJ81XaXAH+gVQ=
 github.com/shouni/go-gemini-client v1.0.4 h1:GnaVR2H6n2IxJsX+Me8StJBhvEEjt874OxLgf/ogFKA=
