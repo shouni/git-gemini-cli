@@ -23,10 +23,11 @@ const (
 // PublisherRunner は、レビュー結果の公開処理を実行する責務を持つインターフェースです。
 type PublisherRunner interface {
 	Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error
+	// Close は保持しているリソース（Publisherなど）を解放します。
+	Close() error
 }
 
 // DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
-// 依存関係（writer, slackNotifier）をDIコンテナ/builderから注入することに専念します。
 type DefaultPublisherRunner struct {
 	publisher     publisher.Publisher
 	urlSigner     remoteio.URLSigner
@@ -34,7 +35,6 @@ type DefaultPublisherRunner struct {
 }
 
 // NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
-// DIコンテナ/builderはこの関数を利用して依存関係を構築します。
 func NewDefaultPublisherRunner(publisher publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
 	return &DefaultPublisherRunner{
 		publisher:     publisher,
@@ -43,8 +43,16 @@ func NewDefaultPublisherRunner(publisher publisher.Publisher, urlSigner remoteio
 	}
 }
 
+// Close は内部のリソースをクリーンアップします。
+func (p *DefaultPublisherRunner) Close() error {
+	if p.publisher != nil {
+		slog.Debug("Publisher をクローズします。")
+		return p.publisher.Close()
+	}
+	return nil
+}
+
 // Run は公開処理のパイプライン全体を実行します。
-// このメソッドは、処理のオーケストレーションに専念します。
 func (p *DefaultPublisherRunner) Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
 	// 1. ストレージへのアップロード処理
 	if err := p.publishToStorage(ctx, cfg, reviewResult); err != nil {
@@ -54,19 +62,17 @@ func (p *DefaultPublisherRunner) Run(ctx context.Context, cfg config.PublishConf
 	// 2. 公開URLの生成 (Slack通知の前に行う)
 	publicURL, err := p.getPublicURL(ctx, cfg.StorageURI)
 	if err != nil {
-		// URL署名/変換が失敗しても処理は続行可能だが、エラーを記録
 		slog.Warn("公開URLの生成に失敗しました。署名なし/静的URIで通知を試みます。", "error", err, "uri", cfg.StorageURI)
-		// 失敗した場合、そのままの StorageURI を publicURL としてフォールバック
 		publicURL = cfg.StorageURI
 	}
 
-	// 3. Slack通知処理 (アップロード成功後、publicURLを使って実行)
+	// 3. Slack通知処理
 	p.notifyToSlack(ctx, publicURL, cfg)
 
 	return nil
 }
 
-// --- プライベートメソッドへの分割 ---
+// --- プライベートメソッド ---
 
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
 func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
@@ -74,7 +80,6 @@ func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg confi
 	if err := p.publisher.Publish(ctx, cfg.StorageURI, meta); err != nil {
 		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.StorageURI, err)
 	}
-
 	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", cfg.StorageURI)
 	return nil
 }
@@ -82,45 +87,31 @@ func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg confi
 // notifyToSlack はSlackに通知を送信します。
 func (p *DefaultPublisherRunner) notifyToSlack(ctx context.Context, publicURL string, cfg config.PublishConfig) {
 	if err := p.slackNotifier.Notify(ctx, publicURL, cfg.StorageURI, cfg.ReviewConfig); err != nil {
-		// 🚨 ポリシー: Slack通知は二次的な機能であるため、アップロード成功後はエラーを返さない。
-		slog.Error("Slack通知の実行中にエラーが発生しましたが、アップロードは成功しているため処理を続行します。", "error", err)
+		slog.Error("Slack通知の実行中にエラーが発生しましたが、処理を続行します。", "error", err)
 	}
 }
 
 // getPublicURL は URI に応じて署名付きURLを生成するか、公開URLに変換します。
 func (p *DefaultPublisherRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
-	if p.urlSigner == nil {
-		// urlSignerがnilの場合、URIは署名が必要ないか、サポートされていないスキームです。
-		slog.Debug("URL Signerがnilです。静的なURI変換のみを試みます。", "uri", storageURI)
-	}
-
-	// GCSの場合: 署名付きURLを生成
 	if remoteio.IsGCSURI(storageURI) {
 		if p.urlSigner == nil {
-			return "", fmt.Errorf("GCS URIが指定されましたが、URL Signerがnilです。")
+			return "", fmt.Errorf("GCS URIが指定されましたが、URL Signerが利用不可です。")
 		}
-
 		signedURL, err := p.urlSigner.GenerateSignedURL(ctx, storageURI, "GET", signedURLExpiration)
 		if err != nil {
 			return "", fmt.Errorf("GCS 署名付きURLの生成に失敗しました: %w", err)
 		}
-		slog.Info("GCS 署名付きURLの生成に成功", "url", signedURL)
 		return signedURL, nil
 	}
 
-	// S3の場合: 静的な公開URL形式に変換
 	if remoteio.IsS3URI(storageURI) {
 		awsRegion := os.Getenv("AWS_REGION")
 		if awsRegion == "" {
-			awsRegion = "ap-northeast-1" // フォールバック
+			awsRegion = "ap-northeast-1"
 		}
-		publicURL := convertS3URIToPublicURL(storageURI, awsRegion)
-		slog.Info("S3 公開URLへの変換に成功", "url", publicURL)
-		return publicURL, nil
+		return convertS3URIToPublicURL(storageURI, awsRegion), nil
 	}
 
-	// その他: 署名や変換が不要なURI (例: ローカルファイル、未サポートのプロバイダ)
-	slog.Debug("静的な公開URL変換や署名が不要なURIです。", "uri", storageURI)
 	return storageURI, nil
 }
 
@@ -128,20 +119,16 @@ func (p *DefaultPublisherRunner) getPublicURL(ctx context.Context, storageURI st
 // 形式: https://{bucketName}.s3.{region}.amazonaws.com/{objectKey}
 func convertS3URIToPublicURL(s3URI, region string) string {
 	processedURI := strings.TrimPrefix(s3URI, "s3://")
-
-	// 最初の "/" でバケット名とオブジェクトキーに分割
 	parts := strings.SplitN(processedURI, "/", 2)
 	bucketName := parts[0]
 	objectKey := "/"
-
 	if len(parts) > 1 {
 		objectKey = "/" + parts[1]
 	}
 
 	// 公開URL形式に再構成 (Path-Style Access)
 	// 形式: https://s3.{region}.amazonaws.com/{bucketName}{objectKey}
-	publicURL := fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
-	return publicURL
+	return fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
 }
 
 // createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
