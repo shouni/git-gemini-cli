@@ -19,7 +19,6 @@ func Review(
 	ctx context.Context,
 	cfg config.ReviewConfig,
 ) (string, error) {
-
 	reviewRunner, err := builder.BuildReviewRunner(ctx, cfg)
 	if err != nil {
 		// BuildReviewRunner が内部でアダプタやビルダーの構築エラーをラップして返す
@@ -45,12 +44,18 @@ func Publish(
 	cfg config.PublishConfig,
 	reviewResult string,
 ) error {
-
 	// クラウドストレージに保存し、そのURLを通知
 	publishRunner, err := builder.BuildPublishRunner(ctx, cfg)
 	if err != nil {
 		return fmt.Errorf("PublishRunnerの構築に失敗しました: %w", err)
 	}
+
+	defer func() {
+		if publishRunner != nil {
+			_ = publishRunner.Close()
+		}
+	}()
+
 	err = publishRunner.Run(ctx, cfg, reviewResult)
 	if err != nil {
 		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)
@@ -62,13 +67,12 @@ func Publish(
 // ReviewAndPublish は、レビューと公開処理を統合して実行します。
 // レビューがスキップされた場合は、ErrSkipReview を返します。
 func ReviewAndPublish(ctx context.Context, cfg config.PublishConfig) error {
-
 	reviewResult, err := Review(ctx, cfg.ReviewConfig)
 	if err != nil {
 		return err
 	}
 
-	if err := Publish(ctx, cfg, reviewResult); err != nil {
+	if err = Publish(ctx, cfg, reviewResult); err != nil {
 		return err
 	}
 
