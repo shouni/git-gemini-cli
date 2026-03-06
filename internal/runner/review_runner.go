@@ -3,9 +3,10 @@ package runner
 import (
 	"context"
 	"fmt"
-	"git-gemini-cli/internal/config"
 	"log/slog"
 	"strings"
+
+	"git-gemini-cli/internal/config"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
@@ -21,7 +22,7 @@ type ReviewRunner interface {
 type DefaultReviewRunner struct {
 	gitService    adapters.GitService
 	codeReviewAI  adapters.CodeReviewAI
-	promptBuilder prompts.ReviewPromptBuilder
+	promptBuilder prompts.PromptBuilder
 }
 
 // NewDefaultReviewRunner は DefaultReviewRunner の新しいインスタンスを生成します。
@@ -29,7 +30,7 @@ type DefaultReviewRunner struct {
 func NewDefaultReviewRunner(
 	git adapters.GitService,
 	codeReviewAI adapters.CodeReviewAI,
-	pb prompts.ReviewPromptBuilder,
+	pb prompts.PromptBuilder,
 ) *DefaultReviewRunner {
 	return &DefaultReviewRunner{
 		gitService:    git,
@@ -76,8 +77,7 @@ func (r *DefaultReviewRunner) Run(
 
 	// プロンプトの生成
 	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
-	templateData := prompts.TemplateData{DiffContent: codeDiff}
-	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, templateData)
+	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, codeDiff)
 	if err != nil {
 		return "", fmt.Errorf("プロンプトの組み立てに失敗しました: %w", err)
 	}

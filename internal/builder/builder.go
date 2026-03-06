@@ -56,7 +56,7 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 		return nil, err
 	}
 
-	promptBuilder, err := prompts.NewPromptBuilder()
+	promptBuilder, err := prompts.NewBuilder()
 	if err != nil {
 		return nil, fmt.Errorf("Prompt Builder の構築に失敗しました: %w", err)
 	}
