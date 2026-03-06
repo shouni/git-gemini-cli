@@ -6,10 +6,10 @@ import (
 	"log/slog"
 	"strings"
 
-	"git-gemini-cli/internal/config"
-
 	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
+
+	"git-gemini-cli/internal/config"
 )
 
 // ReviewRunner は、コードレビューのビジネスロジックを実行し、レビュー結果を生成するインターフェースです。
