@@ -8,11 +8,11 @@ import (
 	"strings"
 	"time"
 
-	"git-gemini-cli/internal/adapters"
-	"git-gemini-cli/internal/config"
-
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
+
+	"git-gemini-cli/internal/adapters"
+	"git-gemini-cli/internal/config"
 )
 
 const (
