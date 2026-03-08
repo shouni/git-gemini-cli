@@ -3,10 +3,11 @@ package adapters
 import (
 	"context"
 	"fmt"
-	"git-gemini-cli/internal/config"
 
 	coreAdapters "github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/domain"
+
+	"git-gemini-cli/internal/config"
 )
 
 // NewCodeReviewAI は adapters.CodeReviewAI のインスタンスを構築します。

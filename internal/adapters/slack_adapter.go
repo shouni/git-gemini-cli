@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"strings"
 
-	"git-gemini-cli/internal/config"
-
 	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-notifier/pkg/factory"
 	"github.com/shouni/go-utils/urlpath"
+
+	"git-gemini-cli/internal/config"
 )
 
 // --- 定数と内部構造体 ---
@@ -26,13 +26,12 @@ type SlackNotifier interface {
 
 // SlackAdapter は SlackNotifier インターフェースを満たす具象型です。
 type SlackAdapter struct {
-	httpClient httpkit.ClientInterface
-	webhookURL string // Webhook URLを保持
+	httpClient httpkit.HTTPClient
+	webhookURL string
 }
 
 // NewSlackAdapter は新しいアダプターインスタンスを作成します。
-// urlSigner は Runner 層に移動したため、ここでは受け取りません。
-func NewSlackAdapter(httpClient httpkit.ClientInterface, webhookURL string) *SlackAdapter {
+func NewSlackAdapter(httpClient httpkit.HTTPClient, webhookURL string) *SlackAdapter {
 	return &SlackAdapter{
 		httpClient: httpClient,
 		webhookURL: webhookURL,

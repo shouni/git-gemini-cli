@@ -50,12 +50,6 @@ func Publish(
 		return fmt.Errorf("PublishRunnerの構築に失敗しました: %w", err)
 	}
 
-	defer func() {
-		if publishRunner != nil {
-			_ = publishRunner.Close()
-		}
-	}()
-
 	err = publishRunner.Run(ctx, cfg, reviewResult)
 	if err != nil {
 		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)

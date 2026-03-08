@@ -3,10 +3,10 @@ package builder
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
+	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 	"github.com/shouni/go-remote-io/pkg/s3factory"
@@ -35,15 +35,20 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 		promptBuilder,
 	)
 
-	slog.Debug("ReviewRunner の構築が完了しました。")
 	return reviewRunner, nil
 }
 
 // BuildPublishRunner は、必要な依存関係をすべて構築し、
-// runner.PublisherRunner (インターフェース) を返します。
 func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.PublisherRunner, error) {
 	var ioFactory remoteio.IOFactory
 	var err error
+
+	success := false
+	defer func() {
+		if !success && ioFactory != nil {
+			_ = ioFactory.Close()
+		}
+	}()
 
 	// 1. IOFactory の初期化
 	switch {
@@ -59,36 +64,33 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	}
 
 	// 2. コンポーネントの構築
-	htmlRunner, err := publisher.NewMarkdownToHtmlRunner(ctx)
+	writer, err := ioFactory.OutputWriter()
 	if err != nil {
-		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
+		return nil, fmt.Errorf("OutputWriter初期化に失敗しました: %w", err)
 	}
-
-	reviewPublisher, err := publisher.NewPublisher(ctx, ioFactory, htmlRunner)
-	if err != nil {
-		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.StorageURI, err)
-	}
-
-	// --- 構築失敗時のリソース解放用ロジック ---
-	success := false
-	defer func() {
-		if !success {
-			slog.Warn("PublishRunnerの構築中にエラーが発生したため、リソースをクリーンアップします。")
-			_ = reviewPublisher.Close()
-		}
-	}()
 
 	urlSigner, err := ioFactory.URLSigner()
 	if err != nil {
 		return nil, fmt.Errorf("URLSignerの初期化に失敗しました: %w", err)
 	}
 
-	// 3. 依存関係を注入して Runner を組み立てる
+	htmlRunner, err := publisher.NewMarkdownToHtmlRunner(ctx)
+	if err != nil {
+		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
+	}
+
+	httpClient := httpkit.New(config.DefaultHTTPTimeout)
 	slackNotifier := adapters.NewSlackAdapter(
-		cfg.HttpClient,
+		httpClient,
 		cfg.SlackWebhookURL,
 	)
 
+	reviewPublisher, err := publisher.NewPublisher(ctx, writer, htmlRunner)
+	if err != nil {
+		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.StorageURI, err)
+	}
+
+	// 3. 依存関係を注入して Runner を組み立てる
 	publisherRunner := runner.NewDefaultPublisherRunner(
 		reviewPublisher,
 		urlSigner,
@@ -97,7 +99,6 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 
 	// すべて成功したため、defer での Close をスキップ
 	success = true
-	slog.Debug("PublishRunner の構築が完了しました。")
 
 	return publisherRunner, nil
 }
