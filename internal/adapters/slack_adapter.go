@@ -6,11 +6,11 @@ import (
 	"log/slog"
 	"strings"
 
-	"git-gemini-cli/internal/config"
-
 	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-notifier/pkg/factory"
 	"github.com/shouni/go-utils/urlpath"
+
+	"git-gemini-cli/internal/config"
 )
 
 // --- 定数と内部構造体 ---

@@ -45,7 +45,7 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	var err error
 
 	defer func() {
-		if ioFactory != nil {
+		if err != nil && ioFactory != nil {
 			_ = ioFactory.Close()
 		}
 	}()
@@ -96,6 +96,7 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 		urlSigner,
 		slackNotifier,
 	)
+	err = nil
 
 	return publisherRunner, nil
 }
