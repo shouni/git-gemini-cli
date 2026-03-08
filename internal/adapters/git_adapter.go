@@ -3,7 +3,7 @@ package adapters
 import (
 	"log/slog"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
+	coreAdapters "github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/domain"
 
 	"git-gemini-cli/internal/config"
@@ -13,19 +13,19 @@ import (
 func NewGitService(cfg config.ReviewConfig) domain.GitService {
 	if cfg.UseExternalGitCommand {
 		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
-		return adapters.NewGitLocalAdapter(
+		return coreAdapters.NewGitLocalAdapter(
 			cfg.LocalPath,
 			cfg.SSHKeyPath,
-			adapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
-			adapters.WithBaseBranch(cfg.BaseBranch),
+			coreAdapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
+			coreAdapters.WithBaseBranch(cfg.BaseBranch),
 		)
 	}
 
 	slog.Debug("GitService: コアライブラリのアダプタ (go-git) を使用します。")
-	return adapters.NewGitAdapter(
+	return coreAdapters.NewGitAdapter(
 		cfg.LocalPath,
 		cfg.SSHKeyPath,
-		adapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
-		adapters.WithBaseBranch(cfg.BaseBranch),
+		coreAdapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
+		coreAdapters.WithBaseBranch(cfg.BaseBranch),
 	)
 }
