@@ -38,7 +38,7 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 	return reviewRunner, nil
 }
 
-// BuildPublishRunner は、必要な依存関係をすべて構築し、
+// BuildPublishRunner は、必要な依存関係をすべて構築し、PublisherRunner のインスタンスを返します。
 func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.PublisherRunner, error) {
 	var ioFactory remoteio.IOFactory
 	var err error
