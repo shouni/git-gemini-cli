@@ -12,10 +12,10 @@ import (
 	"github.com/spf13/cobra"
 )
 
-const baseRepoDirName = "reviewerRepos"
-
 // ReviewConfig は、レビュー実行のパラメータです
 var ReviewConfig config.ReviewConfig
+
+const baseRepoDirName = "reviewerRepos"
 
 // Execute は、clibase.Execute を使用してアプリケーションを構築・実行します。
 func Execute() {
