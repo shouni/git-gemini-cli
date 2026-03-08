@@ -3,7 +3,6 @@ package builder
 import (
 	"context"
 	"fmt"
-	"log/slog"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
@@ -36,7 +35,6 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 		promptBuilder,
 	)
 
-	slog.Debug("ReviewRunner の構築が完了しました。")
 	return reviewRunner, nil
 }
 
@@ -46,11 +44,8 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	var ioFactory remoteio.IOFactory
 	var err error
 
-	// --- 構築失敗時のリソース解放用ロジック ---
-	success := false
 	defer func() {
-		if !success {
-			slog.Warn("PublishRunnerの構築中にエラーが発生したため、リソースをクリーンアップします。")
+		if ioFactory != nil {
 			_ = ioFactory.Close()
 		}
 	}()
@@ -73,16 +68,17 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	if err != nil {
 		return nil, fmt.Errorf("OutputWriter初期化に失敗しました: %w", err)
 	}
+
 	urlSigner, err := ioFactory.URLSigner()
 	if err != nil {
 		return nil, fmt.Errorf("URLSignerの初期化に失敗しました: %w", err)
 	}
+
 	htmlRunner, err := publisher.NewMarkdownToHtmlRunner(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
 	}
 
-	// HTTPクライアントの初期化
 	httpClient := httpkit.New(config.DefaultHTTPTimeout)
 	slackNotifier := adapters.NewSlackAdapter(
 		httpClient,
@@ -100,9 +96,6 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 		urlSigner,
 		slackNotifier,
 	)
-
-	success = true
-	slog.Debug("PublishRunner の構築が完了しました。")
 
 	return publisherRunner, nil
 }
