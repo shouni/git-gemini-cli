@@ -5,53 +5,21 @@ import (
 	"fmt"
 	"log/slog"
 
-	"git-gemini-cli/internal/adapters"
-	"git-gemini-cli/internal/config"
-	"git-gemini-cli/internal/runner"
-
-	core "github.com/shouni/gemini-reviewer-core/pkg/adapters"
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 	"github.com/shouni/go-remote-io/pkg/s3factory"
+
+	"git-gemini-cli/internal/adapters"
+	"git-gemini-cli/internal/config"
+	"git-gemini-cli/internal/runner"
 )
-
-// buildGitService は adapters.GitService のインスタンスを構築する Factory 関数です。
-func buildGitService(cfg config.ReviewConfig) core.GitService {
-	if cfg.UseExternalGitCommand {
-		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
-		return adapters.NewLocalGitAdapter(
-			cfg.LocalPath,
-			cfg.SSHKeyPath,
-			adapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
-			adapters.WithBaseBranch(cfg.BaseBranch),
-		)
-	}
-
-	slog.Debug("GitService: コアライブラリのアダプタ (go-git) を使用します。")
-	return core.NewGitAdapter(
-		cfg.LocalPath,
-		cfg.SSHKeyPath,
-		core.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
-		core.WithBaseBranch(cfg.BaseBranch),
-	)
-}
-
-// buildCodeReviewAI は adapters.CodeReviewAI のインスタンスを構築します。
-func buildCodeReviewAI(ctx context.Context, cfg config.ReviewConfig) (core.CodeReviewAI, error) {
-	codeReviewAI, err := core.NewGeminiAdapter(ctx, cfg.GeminiModel)
-	if err != nil {
-		return nil, fmt.Errorf("CodeReviewAIアダプターの構築に失敗しました: %w", err)
-	}
-	return codeReviewAI, nil
-}
 
 // BuildReviewRunner は、必要な依存関係をすべて構築し、ReviewRunner のインスタンスを返します。
 func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.ReviewRunner, error) {
-	gitService := buildGitService(cfg)
-
-	codeReviewAI, err := buildCodeReviewAI(ctx, cfg)
+	gitService := adapters.NewGitService(cfg)
+	codeReviewAI, err := adapters.NewCodeReviewAI(ctx, cfg)
 	if err != nil {
 		return nil, err
 	}
