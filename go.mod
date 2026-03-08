@@ -4,7 +4,7 @@ go 1.25
 
 require (
 	github.com/shouni/clibase v1.0.2
-	github.com/shouni/gemini-reviewer-core v1.2.5
+	github.com/shouni/gemini-reviewer-core v1.2.6
 	github.com/shouni/go-http-kit v1.2.1
 	github.com/shouni/go-notifier v1.1.4
 	github.com/shouni/go-remote-io v1.2.1
@@ -76,7 +76,7 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
-	github.com/shouni/go-gemini-client v1.0.13 // indirect
+	github.com/shouni/go-gemini-client v1.1.0 // indirect
 	github.com/shouni/go-text-format v1.2.0 // indirect
 	github.com/shouni/netarmor v1.0.0 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect

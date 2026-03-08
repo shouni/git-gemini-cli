@@ -6,8 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/adapters"
-	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
+	"github.com/shouni/gemini-reviewer-core/pkg/domain"
 
 	"git-gemini-cli/internal/config"
 )
@@ -20,17 +19,17 @@ type ReviewRunner interface {
 // DefaultReviewRunner はコードレビューのビジネスロジックを実行します。
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
 type DefaultReviewRunner struct {
-	gitService    adapters.GitService
-	codeReviewAI  adapters.CodeReviewAI
-	promptBuilder prompts.PromptBuilder
+	gitService    domain.GitService
+	codeReviewAI  domain.CodeReviewAI
+	promptBuilder domain.PromptBuilder
 }
 
 // NewDefaultReviewRunner は DefaultReviewRunner の新しいインスタンスを生成します。
 // 依存関係はコンストラクタ経由で注入されます。
 func NewDefaultReviewRunner(
-	git adapters.GitService,
-	codeReviewAI adapters.CodeReviewAI,
-	pb prompts.PromptBuilder,
+	git domain.GitService,
+	codeReviewAI domain.CodeReviewAI,
+	pb domain.PromptBuilder,
 ) *DefaultReviewRunner {
 	return &DefaultReviewRunner{
 		gitService:    git,
@@ -77,7 +76,10 @@ func (r *DefaultReviewRunner) Run(
 
 	// プロンプトの生成
 	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
-	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, codeDiff)
+	data := domain.TemplateData{
+		DiffContent: codeDiff,
+	}
+	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, data)
 	if err != nil {
 		return "", fmt.Errorf("プロンプトの組み立てに失敗しました: %w", err)
 	}

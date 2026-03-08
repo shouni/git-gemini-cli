@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
+	"github.com/shouni/gemini-reviewer-core/pkg/domain"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 
 	"git-gemini-cli/internal/adapters"
@@ -29,13 +29,13 @@ type PublisherRunner interface {
 
 // DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
 type DefaultPublisherRunner struct {
-	publisher     publisher.Publisher
+	publisher     domain.Publisher
 	urlSigner     remoteio.URLSigner
 	slackNotifier adapters.SlackNotifier
 }
 
 // NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
-func NewDefaultPublisherRunner(publisher publisher.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
+func NewDefaultPublisherRunner(publisher domain.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
 	return &DefaultPublisherRunner{
 		publisher:     publisher,
 		urlSigner:     urlSigner,
@@ -132,8 +132,8 @@ func convertS3URIToPublicURL(s3URI, region string) string {
 }
 
 // createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
-func createReviewData(reviewConfig config.ReviewConfig, reviewResult string) publisher.ReviewData {
-	return publisher.ReviewData{
+func createReviewData(reviewConfig config.ReviewConfig, reviewResult string) domain.ReviewData {
+	return domain.ReviewData{
 		RepoURL:        reviewConfig.RepoURL,
 		BaseBranch:     reviewConfig.BaseBranch,
 		FeatureBranch:  reviewConfig.FeatureBranch,
