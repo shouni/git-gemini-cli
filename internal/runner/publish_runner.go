@@ -23,8 +23,6 @@ const (
 // PublisherRunner は、レビュー結果の公開処理を実行する責務を持つインターフェースです。
 type PublisherRunner interface {
 	Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error
-	// Close は保持しているリソース（Publisherなど）を解放します。
-	Close() error
 }
 
 // DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
@@ -41,15 +39,6 @@ func NewDefaultPublisherRunner(publisher domain.Publisher, urlSigner remoteio.UR
 		urlSigner:     urlSigner,
 		slackNotifier: slackNotifier,
 	}
-}
-
-// Close は内部のリソースをクリーンアップします。
-func (p *DefaultPublisherRunner) Close() error {
-	if p.publisher != nil {
-		slog.Debug("Publisher をクローズします。")
-		return p.publisher.Close()
-	}
-	return nil
 }
 
 // Run は公開処理のパイプライン全体を実行します。

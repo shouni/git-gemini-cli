@@ -44,14 +44,8 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	httpClient, err := GetHTTPClient(ctx)
-	if err != nil {
-		return fmt.Errorf("HTTPクライアントの取得に失敗しました: %w", err)
-	}
-
 	// パイプラインを実行し、結果を受け取る
 	publishCfg := config.PublishConfig{
-		HttpClient:      httpClient,
 		ReviewConfig:    ReviewConfig,
 		StorageURI:      publishFlags.URI,
 		SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),

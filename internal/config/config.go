@@ -2,9 +2,10 @@ package config
 
 import (
 	"strings"
-
-	"github.com/shouni/go-http-kit/pkg/httpkit"
+	"time"
 )
+
+const DefaultHTTPTimeout = 30 * time.Second
 
 // ReviewConfig はAIコードレビューに必要なすべての設定を含みます。
 // この構造体は、コマンドライン引数からサービスロジックへ設定を渡すための共通のデータモデルです。
@@ -21,7 +22,6 @@ type ReviewConfig struct {
 }
 
 type PublishConfig struct {
-	HttpClient      httpkit.ClientInterface
 	ReviewConfig    ReviewConfig
 	StorageURI      string
 	SlackWebhookURL string

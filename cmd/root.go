@@ -1,42 +1,21 @@
 package cmd
 
 import (
-	"context"
-	"errors"
 	"log/slog"
 	"os"
 	"path/filepath"
-	"time"
 
 	"git-gemini-cli/internal/config"
 
 	"github.com/shouni/clibase"
-	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 )
 
+const baseRepoDirName = "reviewerRepos"
+
 // ReviewConfig は、レビュー実行のパラメータです
 var ReviewConfig config.ReviewConfig
-
-const (
-	defaultHTTPTimeout = 30 * time.Second
-	baseRepoDirName    = "reviewerRepos"
-)
-
-// clientKey は context.Context に httpkit.Client を格納・取得するための非公開キー
-type clientKey struct{}
-
-// ErrHTTPClientNotFound は、contextからHTTPクライアントが見つからない場合に返されるエラーです。
-var ErrHTTPClientNotFound = errors.New("contextからhttpkit.ClientInterfaceを取得できませんでした")
-
-// GetHTTPClient は、cmd.Context() から httpkit.ClientInterface を取り出す公開関数です。
-func GetHTTPClient(ctx context.Context) (httpkit.ClientInterface, error) {
-	if client, ok := ctx.Value(clientKey{}).(httpkit.ClientInterface); ok {
-		return client, nil
-	}
-	return nil, ErrHTTPClientNotFound
-}
 
 // Execute は、clibase.Execute を使用してアプリケーションを構築・実行します。
 func Execute() {
@@ -67,18 +46,11 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 	})
 	slog.SetDefault(slog.New(handler))
 
-	// HTTPクライアントの初期化
-	httpClient := httpkit.New(defaultHTTPTimeout)
-
 	// RepoURLが指定されている場合のみ、LocalPathの動的生成を試みる
 	if ReviewConfig.LocalPath == "" && ReviewConfig.RepoURL != "" {
 		ReviewConfig.LocalPath = urlpath.SanitizeURLToUniquePath(ReviewConfig.RepoURL, baseRepoDirName)
 		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", ReviewConfig.LocalPath)
 	}
-
-	// コマンドのコンテキストに HTTP Client を格納
-	ctx := context.WithValue(cmd.Context(), clientKey{}, httpClient)
-	cmd.SetContext(ctx)
 
 	return nil
 }

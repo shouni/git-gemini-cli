@@ -7,6 +7,7 @@ import (
 
 	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
+	"github.com/shouni/go-http-kit/pkg/httpkit"
 	"github.com/shouni/go-remote-io/pkg/gcsfactory"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 	"github.com/shouni/go-remote-io/pkg/s3factory"
@@ -45,6 +46,15 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	var ioFactory remoteio.IOFactory
 	var err error
 
+	// --- 構築失敗時のリソース解放用ロジック ---
+	success := false
+	defer func() {
+		if !success {
+			slog.Warn("PublishRunnerの構築中にエラーが発生したため、リソースをクリーンアップします。")
+			_ = ioFactory.Close()
+		}
+	}()
+
 	// 1. IOFactory の初期化
 	switch {
 	case remoteio.IsGCSURI(cfg.StorageURI):
@@ -59,43 +69,38 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	}
 
 	// 2. コンポーネントの構築
+	writer, err := ioFactory.OutputWriter()
+	if err != nil {
+		return nil, fmt.Errorf("OutputWriter初期化に失敗しました: %w", err)
+	}
+	urlSigner, err := ioFactory.URLSigner()
+	if err != nil {
+		return nil, fmt.Errorf("URLSignerの初期化に失敗しました: %w", err)
+	}
 	htmlRunner, err := publisher.NewMarkdownToHtmlRunner(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
 	}
 
-	reviewPublisher, err := publisher.NewPublisher(ctx, ioFactory, htmlRunner)
+	// HTTPクライアントの初期化
+	httpClient := httpkit.New(config.DefaultHTTPTimeout)
+	slackNotifier := adapters.NewSlackAdapter(
+		httpClient,
+		cfg.SlackWebhookURL,
+	)
+
+	reviewPublisher, err := publisher.NewPublisher(ctx, writer, htmlRunner)
 	if err != nil {
 		return nil, fmt.Errorf("Publisherの初期化に失敗しました (URI: %s): %w", cfg.StorageURI, err)
 	}
 
-	// --- 構築失敗時のリソース解放用ロジック ---
-	success := false
-	defer func() {
-		if !success {
-			slog.Warn("PublishRunnerの構築中にエラーが発生したため、リソースをクリーンアップします。")
-			_ = reviewPublisher.Close()
-		}
-	}()
-
-	urlSigner, err := ioFactory.URLSigner()
-	if err != nil {
-		return nil, fmt.Errorf("URLSignerの初期化に失敗しました: %w", err)
-	}
-
 	// 3. 依存関係を注入して Runner を組み立てる
-	slackNotifier := adapters.NewSlackAdapter(
-		cfg.HttpClient,
-		cfg.SlackWebhookURL,
-	)
-
 	publisherRunner := runner.NewDefaultPublisherRunner(
 		reviewPublisher,
 		urlSigner,
 		slackNotifier,
 	)
 
-	// すべて成功したため、defer での Close をスキップ
 	success = true
 	slog.Debug("PublishRunner の構築が完了しました。")
 

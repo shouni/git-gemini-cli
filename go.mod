@@ -4,11 +4,11 @@ go 1.25
 
 require (
 	github.com/shouni/clibase v1.0.2
-	github.com/shouni/gemini-reviewer-core v1.2.7
-	github.com/shouni/go-http-kit v1.2.1
-	github.com/shouni/go-notifier v1.1.4
+	github.com/shouni/gemini-reviewer-core v1.2.8
+	github.com/shouni/go-http-kit v1.3.2
+	github.com/shouni/go-notifier v1.1.5
 	github.com/shouni/go-remote-io v1.2.1
-	github.com/shouni/go-utils v1.0.18
+	github.com/shouni/go-utils v1.0.19
 	github.com/spf13/cobra v1.10.2
 )
 
@@ -80,7 +80,7 @@ require (
 	github.com/shouni/go-text-format v1.2.0 // indirect
 	github.com/shouni/netarmor v1.0.0 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
-	github.com/slack-go/slack v0.17.3 // indirect
+	github.com/slack-go/slack v0.19.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -94,7 +94,6 @@ require (
 	go.opentelemetry.io/otel/sdk v1.39.0 // indirect
 	go.opentelemetry.io/otel/sdk/metric v1.39.0 // indirect
 	go.opentelemetry.io/otel/trace v1.39.0 // indirect
-	go.uber.org/multierr v1.11.0 // indirect
 	golang.org/x/crypto v0.48.0 // indirect
 	golang.org/x/net v0.49.0 // indirect
 	golang.org/x/oauth2 v0.35.0 // indirect
