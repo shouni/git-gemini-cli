@@ -39,13 +39,13 @@ func BuildReviewRunner(ctx context.Context, cfg config.ReviewConfig) (runner.Rev
 }
 
 // BuildPublishRunner は、必要な依存関係をすべて構築し、
-// runner.PublisherRunner (インターフェース) を返します。
 func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.PublisherRunner, error) {
 	var ioFactory remoteio.IOFactory
 	var err error
 
+	success := false
 	defer func() {
-		if err != nil && ioFactory != nil {
+		if !success && ioFactory != nil {
 			_ = ioFactory.Close()
 		}
 	}()
@@ -96,7 +96,9 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 		urlSigner,
 		slackNotifier,
 	)
-	err = nil
+
+	// すべて成功したため、defer での Close をスキップ
+	success = true
 
 	return publisherRunner, nil
 }
