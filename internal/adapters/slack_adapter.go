@@ -2,64 +2,58 @@ package adapters
 
 import (
 	"context"
+	"errors"
 	"fmt"
 	"log/slog"
 	"strings"
 
 	"github.com/shouni/go-http-kit/pkg/httpkit"
-	"github.com/shouni/go-notifier/pkg/factory"
+	"github.com/shouni/go-notifier/pkg/slack"
 	"github.com/shouni/go-utils/urlpath"
 
 	"git-gemini-cli/internal/config"
 )
 
-// --- 定数と内部構造体 ---
-
-// SlackNotifier は Slack への通知機能を提供する契約を定義します。
-// publicURL は外部からアクセス可能なリンク (署名済みURLなど) を示し、
-// storageURI は内部的なストレージの場所 (s3://... など) を示します。
-type SlackNotifier interface {
-	Notify(ctx context.Context, publicURL, storageURI string, cfg config.ReviewConfig) error
-}
-
-// --- 具象アダプター ---
-
 // SlackAdapter は SlackNotifier インターフェースを満たす具象型です。
 type SlackAdapter struct {
-	httpClient httpkit.HTTPClient
-	webhookURL string
+	webhookURL  string // Webhook URLを保持
+	slackClient *slack.Client
 }
 
 // NewSlackAdapter は新しいアダプターインスタンスを作成します。
-func NewSlackAdapter(httpClient httpkit.HTTPClient, webhookURL string) *SlackAdapter {
-	return &SlackAdapter{
-		httpClient: httpClient,
-		webhookURL: webhookURL,
+func NewSlackAdapter(httpClient httpkit.RequestExecutor, webhookURL string) (*SlackAdapter, error) {
+	if webhookURL == "" {
+		// オプショナル機能として扱い、空のままインスタンスを返す
+		return &SlackAdapter{}, nil
 	}
+
+	if httpClient == nil {
+		return nil, errors.New("http client cannot be nil")
+	}
+
+	client, err := slack.NewClient(httpClient, webhookURL)
+	if err != nil {
+		return nil, fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
+	}
+
+	return &SlackAdapter{
+		webhookURL:  webhookURL,
+		slackClient: client,
+	}, nil
 }
 
-// Notify は SlackNotifier インターフェースの実装です。
+// Notify は Slack への通知を実行します。
 // publicURL をリンク先として、Slack に投稿します。
-func (a *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string, cfg config.ReviewConfig) error {
-
-	// 1. Slack 認証情報の取得とスキップチェック
-	if a.webhookURL == "" {
-		slog.Info("SLACK_WEBHOOK_URL が設定されていません。Slack通知をスキップします。", "storage_uri", storageURI)
+func (s *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string, cfg config.ReviewConfig) error {
+	if s.webhookURL == "" || s.slackClient == nil {
+		slog.Info("Slack通知が無効化されているか、クライアントが未初期化のためスキップします。", "storage_uri", storageURI)
 		return nil
 	}
 
-	// 2. HTTP Clientの取得とSlackクライアントの初期化
-	slackClient, err := factory.GetSlackClient(a.httpClient)
-	if err != nil {
-		return fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
-	}
-
-	// 3. Slack に投稿するメッセージを作成
 	title := "✅ AIコードレビュー結果がアップロードされました。"
-	content := a.buildSlackContent(publicURL, storageURI, cfg)
+	content := s.buildSlackContent(publicURL, storageURI, cfg)
 
-	// 4. Slack投稿処理を実行
-	if err := slackClient.SendTextWithHeader(ctx, title, content); err != nil {
+	if err := s.slackClient.SendTextWithHeader(ctx, title, content); err != nil {
 		return fmt.Errorf("Slackへの結果URL投稿に失敗しました: %w", err)
 	}
 
@@ -68,14 +62,14 @@ func (a *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string,
 }
 
 // buildSlackContent は投稿メッセージの本文を組み立てます。
-func (a *SlackAdapter) buildSlackContent(publicURL, storageURI string, cfg config.ReviewConfig) string {
+func (s *SlackAdapter) buildSlackContent(publicURL, storageURI string, cfg config.ReviewConfig) string {
 	repoPath := urlpath.GetRepositoryPath(cfg.RepoURL)
 	content := fmt.Sprintf(
-		"**詳細URL:** <%s|%s>\n"+
-			"**リポジトリ:** `%s`\n"+
-			"**ブランチ:** `%s` ← `%s`\n"+
-			"**モード:** `%s`\n"+
-			"**モデル:** `%s`",
+		"*詳細URL:* <%s|%s>\n"+
+			"*リポジトリ:* `%s`\n"+
+			"*ブランチ:* `%s` ← `%s`\n"+
+			"*モード:* `%s`\n"+
+			"*モデル:* `%s`",
 		publicURL,
 		storageURI,
 		repoPath,
