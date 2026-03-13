@@ -11,7 +11,6 @@ import (
 	"github.com/shouni/gemini-reviewer-core/pkg/domain"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 
-	"git-gemini-cli/internal/adapters"
 	"git-gemini-cli/internal/config"
 )
 
@@ -25,19 +24,26 @@ type PublisherRunner interface {
 	Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error
 }
 
+// Notifier は 通知機能を提供する契約を定義します。
+// publicURL は外部からアクセス可能なリンク (署名済みURLなど) を示し、
+// storageURI は内部的なストレージの場所 (s3://... など) を示します。
+type Notifier interface {
+	Notify(ctx context.Context, publicURL, storageURI string, cfg config.ReviewConfig) error
+}
+
 // DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
 type DefaultPublisherRunner struct {
-	publisher     domain.Publisher
-	urlSigner     remoteio.URLSigner
-	slackNotifier adapters.SlackNotifier
+	publisher domain.Publisher
+	urlSigner remoteio.URLSigner
+	notifier  Notifier
 }
 
 // NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
-func NewDefaultPublisherRunner(publisher domain.Publisher, urlSigner remoteio.URLSigner, slackNotifier adapters.SlackNotifier) *DefaultPublisherRunner {
+func NewDefaultPublisherRunner(publisher domain.Publisher, urlSigner remoteio.URLSigner, slackNotifier Notifier) *DefaultPublisherRunner {
 	return &DefaultPublisherRunner{
-		publisher:     publisher,
-		urlSigner:     urlSigner,
-		slackNotifier: slackNotifier,
+		publisher: publisher,
+		urlSigner: urlSigner,
+		notifier:  slackNotifier,
 	}
 }
 
@@ -75,7 +81,7 @@ func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg confi
 
 // notifyToSlack はSlackに通知を送信します。
 func (p *DefaultPublisherRunner) notifyToSlack(ctx context.Context, publicURL string, cfg config.PublishConfig) {
-	if err := p.slackNotifier.Notify(ctx, publicURL, cfg.StorageURI, cfg.ReviewConfig); err != nil {
+	if err := p.notifier.Notify(ctx, publicURL, cfg.StorageURI, cfg.ReviewConfig); err != nil {
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、処理を続行します。", "error", err)
 	}
 }

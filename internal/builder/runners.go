@@ -80,10 +80,13 @@ func BuildPublishRunner(ctx context.Context, cfg config.PublishConfig) (runner.P
 	}
 
 	httpClient := httpkit.New(config.DefaultHTTPTimeout)
-	slackNotifier := adapters.NewSlackAdapter(
+	slackNotifier, err := adapters.NewSlackAdapter(
 		httpClient,
 		cfg.SlackWebhookURL,
 	)
+	if err != nil {
+		return nil, fmt.Errorf("SlackAdapterの初期化に失敗しました: %w", err)
+	}
 
 	reviewPublisher, err := publisher.NewPublisher(ctx, writer, htmlRunner)
 	if err != nil {
