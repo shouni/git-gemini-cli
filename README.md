@@ -13,6 +13,16 @@
 
 ## 🏗 プロジェクト構成
 
+### 処理概要
+
+1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
+2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
+3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client ) を経由した Gemini API によるコード分析を実施。
+4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
+5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
+
+---
+
 ### クリーン・ヘキサゴナル
 
 1. **依存性の逆転 (DIP):** `pkg/core` で定義されたインターフェース（ポート）に対してビジネスロジックを記述し、具体的な実装（アダプター）を `internal/adapters` に隠蔽しています。これにより、Git プロバイダーや通知先等の外部環境の変化がビジネスロジックに波及しません。
@@ -26,16 +36,6 @@
 * **抽象定義層 (`pkg/core`):** システムの核となる**ポート（インターフェース）定義**。ビジネスルールの実行に必要な契約を規定し、外部の具象実装からビジネスロジックを完全に分離します。
 * **Application 層 (`internal/pipeline`, `runner`):** ビジネスロジックの心臓部。ポートを介して外部サービスをオーケストレートし、具体的なユースケースを実現します。
 * **Infrastructure 層 (`internal/adapters`, `pkg/cloud`, etc.):** 外部世界（Git, AI API, Cloud Storage, Slack）との境界。各ポートに対する具象実装を担います。
-
----
-
-### プロジェクトの処理概要
-
-1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
-2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
-3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client ) を経由した Gemini API によるコード分析を実施。
-4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
-5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
 
 ---
 
