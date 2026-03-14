@@ -65,8 +65,9 @@ func (r *ReviewRunner) Run(
 		return "", fmt.Errorf("コード差分の取得に失敗しました: %w", err)
 	}
 
+	// レビュー対象の差分なし
 	if strings.TrimSpace(codeDiff) == "" {
-		return "", nil
+		return "", domain.ErrSkipReview
 	}
 	slog.Info("Git差分の取得に成功しました。", "size_bytes", len(codeDiff))
 

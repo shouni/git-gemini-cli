@@ -2,19 +2,20 @@ package pipeline
 
 import (
 	"context"
+
 	"git-gemini-cli/internal/domain"
 )
 
 // ReviewPipeline はパイプラインの実行に必要な外部依存関係を保持するサービス構造体です。
 type ReviewPipeline struct {
-	reviewRunner  domain.ReviewRunner
-	publishRunner domain.PublishRunner
+	review  domain.ReviewRunner
+	publish domain.PublishRunner
 }
 
 func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPipeline {
 	return &ReviewPipeline{
-		reviewRunner:  r,
-		publishRunner: p,
+		review:  r,
+		publish: p,
 	}
 }
 
@@ -27,23 +28,15 @@ func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) 
 	publishReq := req
 	publishReq.ReviewMarkdown = result
 
-	return p.publishRunner.Run(ctx, publishReq)
+	return p.publish.Run(ctx, publishReq)
 }
 
 // Review はレビュー処理をします。
 func (p *ReviewPipeline) Review(ctx context.Context, req domain.ReviewRequest) (string, error) {
-	result, err := p.reviewRunner.Run(ctx, req)
-	if err != nil {
-		return "", err
-	}
-	if result == "" {
-		return "", domain.ErrSkipReview
-	}
-
-	return result, nil
+	return p.review.Run(ctx, req)
 }
 
 // Publish は公開処理をします。
 func (p *ReviewPipeline) Publish(ctx context.Context, req domain.ReviewRequest) error {
-	return p.publishRunner.Run(ctx, req)
+	return p.publish.Run(ctx, req)
 }
