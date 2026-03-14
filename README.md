@@ -37,6 +37,8 @@
 4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
 5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
 
+---
+
 ```mermaid
 sequenceDiagram
     autonumber
@@ -111,7 +113,7 @@ go build -o bin/git_gemini_cli
 
 実行ファイルは、プロジェクトルートの **`./bin/git_gemini_cli`** に生成されます。
 
------
+---
 
 ### 3\. 環境変数の設定 (必須)
 
@@ -126,7 +128,7 @@ export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 ```
 
------
+---
 
 ### 4\. モデルパラメータとプロンプト設定について (重要) 🆕
 
@@ -136,7 +138,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
     * この低い温度設定は、応答の安定性を優先し、一貫性のあるコードレビュー結果を生成するために、コアライブラリ側で適用されています。
 * **プロンプト設定:** プロンプトテンプレートファイル (`.md`) は、**コアライブラリのリポジトリ**に配置されており、本ツールでは**変更できません**。内容を確認・変更したい場合は、[`gemini-reviewer-core` ](https://github.com/shouni/gemini-reviewer-core) のリポジトリを参照してください。
 
------
+---
 
 ## 🤖 AIコードレビューの種類 (`--mode` オプション)
 
@@ -147,7 +149,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | **`detail`** | **gemini-reviewer-core/prompts/prompt\_detail.md** | **コード品質と保守性の向上**を目的とした詳細なレビュー。可読性、重複、命名規則、一般的なベストプラクティスからの逸脱など、広範囲な技術的側面に焦点を当てます。 |
 | **`release`** | **gemini-reviewer-core/prompts/prompt\_release.md** | **本番リリース可否の判定**を目的としたクリティカルなレビュー。致命的なバグ、セキュリティ脆弱性、サーバーダウンにつながる重大なパフォーマンス問題など、リリースをブロックする問題に限定して指摘します。 |
 
------
+---
 
 ## 🚀 使い方 (Usage) と実行例
 
@@ -169,7 +171,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | `--skip-host-key-check` | なし | SSHホストキーチェックをスキップする（**🚨非推奨/危険な設定**）。**`known_hosts`を使用しない**場合に設定します。 | `false` | ❌ |
 | `--use-external-git-command` | なし | ローカルのGitコマンド使用する。 | **`true`** | ❌ |
 
------
+---
 
 ### 1\. 標準出力モード (`generic`)
 
@@ -186,7 +188,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
   --feature-branch "develop"
 ```
 
------
+---
 
 ### 2\. クラウド保存モード (`publish`) 🌟 (マルチクラウド・**通知対応**)
 
@@ -225,7 +227,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | :--- | :--- | :--- | :--- | :--- |
 | `--uri` | **`-s`** | 書き込み先 URI (**`gs://...`** または **`s3://...`** をサポート) | ✅ | **なし** |
 
------
+---
 
 ### 📜 ライセンス (License)
 
