@@ -13,7 +13,7 @@ type Pipeline interface {
 	Publish(ctx context.Context, req ReviewRequest) error
 }
 
-// ReviewRunner は、レビュー要求に対して実際のレビュー処理分析等）を（AI実行するインターフェースです。
+// ReviewRunner は、レビュー要求に対して実際のレビュー処理（分析等）をAIで実行するインターフェースです。
 type ReviewRunner interface {
 	Run(ctx context.Context, req ReviewRequest) (string, error)
 }

@@ -32,9 +32,10 @@ func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) 
 	if result == "" {
 		return ErrSkipReview
 	}
-	req.ReviewMarkdown = result
+	publishReq := req
+	publishReq.ReviewMarkdown = result
 
-	return p.publishRunner.Run(ctx, req)
+	return p.publishRunner.Run(ctx, publishReq)
 }
 
 // Review はレビュー処理をします。
