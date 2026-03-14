@@ -39,6 +39,8 @@
 
 ---
 
+### シーケンス
+
 ```mermaid
 sequenceDiagram
     autonumber
