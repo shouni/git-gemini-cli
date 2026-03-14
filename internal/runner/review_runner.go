@@ -84,7 +84,7 @@ func (r *ReviewRunner) Run(
 	slog.Info("AIによるコードレビューを開始します。", "model", cfg.GeminiModel)
 
 	// Gemini Adapterにレビューを依頼
-	reviewResult, err := r.codeReviewAI.ReviewCodeDiff(ctx, finalPrompt)
+	reviewResult, err := r.codeReviewAI.ReviewCodeDiff(ctx, cfg.GeminiModel, finalPrompt)
 	if err != nil {
 		return "", fmt.Errorf("AIレビューの実行に失敗しました: %w", err)
 	}

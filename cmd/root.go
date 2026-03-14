@@ -32,6 +32,8 @@ func Execute() {
 
 // initAppPreRunE は、コマンド実行前にログ設定やクライアント初期化を行います。
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
+	ReviewConfig.ProjectID = os.Getenv("GCP_PROJECT_ID")
+	ReviewConfig.GeminiAPIKey = os.Getenv("GEMINI_API_KEY")
 	ReviewConfig.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
 	// ユーザー入力の正規化
 	ReviewConfig.Normalize()

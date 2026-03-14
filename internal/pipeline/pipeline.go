@@ -26,11 +26,11 @@ func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPip
 // Execute はレビューリクエストの全工程（実行から公開まで）をオーケストレートします。
 func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) error {
 	result, err := p.reviewRunner.Run(ctx, req)
+	if errors.Is(err, ErrSkipReview) {
+		return nil
+	}
 	if err != nil {
 		return err
-	}
-	if result == "" {
-		return ErrSkipReview
 	}
 	publishReq := req
 	publishReq.ReviewMarkdown = result
@@ -40,7 +40,15 @@ func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) 
 
 // Review はレビュー処理をします。
 func (p *ReviewPipeline) Review(ctx context.Context, req domain.ReviewRequest) (string, error) {
-	return p.reviewRunner.Run(ctx, req)
+	result, err := p.reviewRunner.Run(ctx, req)
+	if err != nil {
+		return "", err
+	}
+	if result == "" {
+		return "", ErrSkipReview
+	}
+
+	return result, nil
 }
 
 // Publish は公開処理をします。

@@ -29,21 +29,6 @@
 | **言語** | **Go (Golang)** | ツールの開発言語。クロスプラットフォームでの高速な実行を実現します。 |
 | **CLI フレームワーク** | **Cobra** | コマンドライン引数（フラグ）の解析とサブコマンド構造 (`generic`, `publish`) の構築に使用します。 |
 | **コアレビュー機能** | **[`github.com/shouni/gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
-| **Markdown to HTML** | **Go-Text-Format (Goldmark)** | AIが出力したMarkdownを**スタイル付きの完全なHTMLドキュメント**に変換し、`publish`モードでの高いレポート品質を実現します。 |
-| **ロギング** | **log/slog** | 構造化されたログ (`key=value`) に完全移行。詳細なデバッグ情報が必要な際に、ログレベルを上げて柔軟に対応できます。 |
-
------
-
-## 🧩 アーキテクチャ設計と採用理由 (Local Optimized)
-
-本ツールは、**ローカル環境での高速実行**と**既存のGit設定とのシームレスな統合**を目的として、**`os/exec`** を使用したローカルGitコマンド実行を主要な戦略としています。これにより、ユーザーの環境設定（SSH認証、Git LFSなど）を最大限に活用できます。
-
-| 特徴 | **本ツール (CLI Tool)** (現行設計) | **Web Runner** (設計) |
-| :--- | :--- | :--- |
-| **Git操作** | **外部コマンド実行 (`os/exec`)**<br>OSの `git diff` を直接使用。**高速**で `.gitattributes` 等も考慮される。 | **純粋な Go 実装 (`go-git`)**<br>OS非依存だが、大規模リポジトリでは遅延やメモリ消費の可能性。 |
-| **更新戦略** | **Pull 主体 (永続化)**<br>ローカルリポジトリを維持し、`git pull` でワーキングツリーを更新。 | **Fetch 主体 (使い捨て)**<br>`Pull` せず `Fetch` でDBのみ更新し、毎回クリーンアップする。 |
-| **SSH認証** | **OS設定を利用**<br>`~/.ssh/config` や `ssh-agent`、**`GIT_SSH_COMMAND`** を利用し、ユーザーの既存設定で認証する。 | **Go内で完結**<br>秘密鍵を読み込み、プログラム内で署名を行う。 |
-| **Context** | **あり** (`exec.CommandContext`を使用)<br>実行フローは同期的ながら、**タイムアウト制御**と**中断処理**をサポート。 | **あり (必須)** |
 
 -----
 
@@ -68,7 +53,9 @@ go build -o bin/git_gemini_cli
 Gemini API を利用するために、API キーを環境変数に設定する必要があります。また、連携サービスを使用する場合は、対応する環境変数を設定します。
 
 ```bash
-# Gemini API キー (必須)
+# GCP プロジェクトID
+export GCP_PROJECT_ID="YOUR_GCP_PROJECT_ID"
+# Gemini API キー
 export GEMINI_API_KEY="YOUR_GEMINI_API_KEY"
 # Slack 連携 (publishモードで保存成功時に公開URLが通知されます)
 export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."

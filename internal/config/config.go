@@ -19,6 +19,8 @@ type Config struct {
 	LocalPath             string
 	SkipHostKeyCheck      bool
 	UseExternalGitCommand bool
+	ProjectID             string
+	GeminiAPIKey          string
 	SlackWebhookURL       string
 }
 
