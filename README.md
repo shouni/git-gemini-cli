@@ -11,17 +11,17 @@
 
 ---
 
-## 🏗 プロジェクト構成
+## ✨ 技術スタック (Technology Stack)
 
-### 処理概要
-
-1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
-2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
-3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client) を経由した Gemini API によるコード分析を実施。
-4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
-5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
+| 要素 | 技術 / ライブラリ | 役割 |
+| :--- | :--- | :--- |
+| **言語** | **Go (Golang)** | ツールの開発言語。クロスプラットフォームでの高速な実行を実現します。 |
+| **CLI フレームワーク** | **Cobra** | コマンドライン引数（フラグ）の解析とサブコマンド構造 (`generic`, `publish`) の構築に使用します。 |
+| **コアレビュー機能** | **[`github.com/shouni/gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
 
 ---
+
+## 🏗 システムアーキテクチャ (System Architecture)
 
 ### クリーン・ヘキサゴナル
 
@@ -36,6 +36,16 @@
 * **抽象定義層 (`pkg/core`):** システムの核となる**ポート（インターフェース）定義**。ビジネスルールの実行に必要な契約を規定し、外部の具象実装からビジネスロジックを完全に分離します。
 * **Application 層 (`internal/pipeline`, `runner`):** ビジネスロジックの心臓部。ポートを介して外部サービスをオーケストレートし、具体的なユースケースを実現します。
 * **Infrastructure 層 (`internal/adapters`, `pkg/cloud`, etc.):** 外部世界（Git, AI API, Cloud Storage, Slack）との境界。各ポートに対する具象実装を担います。
+
+---
+
+## 🔄 処理概要
+
+1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
+2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
+3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client) を経由した Gemini API によるコード分析を実施。
+4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
+5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
 
 ---
 
@@ -91,15 +101,7 @@ sequenceDiagram
 
 ---
 
-## ✨ 技術スタック (Technology Stack)
 
-| 要素 | 技術 / ライブラリ | 役割 |
-| :--- | :--- | :--- |
-| **言語** | **Go (Golang)** | ツールの開発言語。クロスプラットフォームでの高速な実行を実現します。 |
-| **CLI フレームワーク** | **Cobra** | コマンドライン引数（フラグ）の解析とサブコマンド構造 (`generic`, `publish`) の構築に使用します。 |
-| **コアレビュー機能** | **[`github.com/shouni/gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
-
----
 
 ## 🛠️ 事前準備と環境設定
 
