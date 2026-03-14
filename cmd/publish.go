@@ -7,6 +7,7 @@ import (
 
 	"github.com/spf13/cobra"
 
+	"git-gemini-cli/internal/builder"
 	"git-gemini-cli/internal/domain"
 )
 
@@ -40,12 +41,25 @@ func init() {
 // publishCommand は、AIによるレビュー結果を生成し、指定されたURIのクラウドストレージに
 // 公開（アップロード）と通知を行う publish コマンドの実行ロジックです。
 func publishCommand(cmd *cobra.Command, args []string) error {
+	ctx := cmd.Context()
+
+	appCtx, err := builder.BuildContainer(ctx, &ReviewConfig)
+	if err != nil {
+		// コンテナの構築エラーをラップして返す
+		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
+	}
+	defer func() {
+		if closeErr := appCtx.Close(); closeErr != nil {
+			slog.ErrorContext(ctx, "コンテナのクローズに失敗しました", "error", closeErr)
+		}
+	}()
+
 	req := domain.ReviewRequest{
 		Config:     ReviewConfig,
 		StorageURI: publishFlags.URI,
 	}
-	// 1. パイプラインを実行
-	if err := appContainer.Pipeline.Execute(cmd.Context(), req); err != nil {
+
+	if err := appCtx.Pipeline.Execute(ctx, req); err != nil {
 		if errors.Is(err, domain.ErrSkipReview) {
 			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
 			return nil
