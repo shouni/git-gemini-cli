@@ -32,6 +32,7 @@ func Execute() {
 
 // initAppPreRunE は、コマンド実行前にログ設定やクライアント初期化を行います。
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
+	ReviewConfig.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
 	// ユーザー入力の正規化
 	ReviewConfig.Normalize()
 
@@ -51,8 +52,6 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 		ReviewConfig.LocalPath = urlpath.SanitizeURLToUniquePath(ReviewConfig.RepoURL, baseRepoDirName)
 		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", ReviewConfig.LocalPath)
 	}
-
-	ReviewConfig.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
 
 	return nil
 }
