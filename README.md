@@ -7,20 +7,85 @@
 
 ## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
 
-**Git Gemini CLI** は、AIコードレビューの**コアロジック**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
+**Git Gemini CLI** は、AIコードレビューの**コアロジック**を提供する **[github.com/shouni/gemini-reviewer-core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
 
-本ツールは、ユーザーのCLIフラグを受け取り、以下の**パイプライン全体**を実行します。
+---
 
-1.  **Git操作**: OSの**外部`git`コマンド** (`os/exec`) を使用してリモートリポジトリをローカルにクローンし、ブランチ間の差分を取得します。
-2.  **AIレビュー**: 取得した差分データをコアライブラリに渡し、指定されたモード（`detail` / `release`）に基づきAIによるレビュー結果を生成します。
-3.  **結果出力**:
-    * `generic`モードでは、レビュー結果を**標準出力**に出力します。
-    * `publish`モードでは、レビュー結果（Markdown）をスタイル付きのHTMLに変換し、指定された**クラウドストレージURI**（GCS/S3）に保存します。
-4.  **通知**: `publish`モードにおいて、**`SLACK_WEBHOOK_URL`環境変数**が設定されている場合、保存された結果への**公開URL**をSlackに自動で通知します。
+## 🏗 プロジェクト構成
 
-本ツールは、既存のローカルGit設定を最大限に活用し、高速な実行とCI/CDパイプラインとの統合を目的としています。AIは煩雑な初期チェックを担う、**チームの優秀な新しいパートナー**のような存在です。
+### クリーン・ヘキサゴナル
 
------
+1. **依存性の逆転 (DIP):** `pkg/core` で定義されたインターフェース（ポート）に対してビジネスロジックを記述し、具体的な実装（アダプター）を `internal/adapters` に隠蔽しています。これにより、Git プロバイダーや通知先等の外部環境の変化がビジネスロジックに波及しません。
+2. **疎結合なライフサイクル管理:** `internal/builder` を用いて依存関係を一元管理（DI）することで、コンポーネント間の疎結合性を担保し、実行時の差し替えを容易にしています。
+3. **セキュリティの透過性:** `pkg/netarmor` や `httpkit` 等の基盤層で、通信や検証の横断的関心事（Cross-cutting concerns）を抽象化し、ビジネスロジックの可読性を保護しています。
+
+---
+
+### レイヤー構成の境界
+
+* **抽象定義層 (`pkg/core`):** システムの核となる**ポート（インターフェース）定義**。ビジネスルールの実行に必要な契約を規定し、外部の具象実装からビジネスロジックを完全に分離します。
+* **Application 層 (`internal/pipeline`, `runner`):** ビジネスロジックの心臓部。ポートを介して外部サービスをオーケストレートし、具体的なユースケースを実現します。
+* **Infrastructure 層 (`internal/adapters`, `pkg/cloud`, etc.):** 外部世界（Git, AI API, Cloud Storage, Slack）との境界。各ポートに対する具象実装を担います。
+
+---
+
+### プロジェクトの処理概要
+
+1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
+2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
+3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client ) を経由した Gemini API によるコード分析を実施。
+4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
+5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Main as main.go
+    participant Cont as internal/app/container
+    participant Pipe as internal/pipeline
+    participant ReviewR as internal/runner/review_runner
+    participant Git as internal/adapter/git_adapter
+    participant AI as internal/adapters/ai_adapter
+    participant PublishR as internal/runner/publish_runner
+    participant Pub as pkg/core/publisher
+    participant Slack as internal/adapters/slack_adapter
+
+    Note over Main, Cont: 1. DIコンテナ構築
+    Main->>Cont: NewContainer(Config)
+    Cont->>Cont: BuildAdapters()
+    Cont-->>Main: Container (依存解決済み)
+
+    Note over Main, Pipe: 2. パイプライン実行 (Execute)
+    Main->>Pipe: Execute(ctx, req)
+
+    Note over Pipe, ReviewR: 3. レビューフェーズ (Review)
+    Pipe->>ReviewR: Run(ctx, req)
+    activate ReviewR
+    ReviewR->>Git: CloneOrUpdate()
+    ReviewR->>Git: Fetch()
+    ReviewR->>Git: GetCodeDiff()
+    ReviewR->>AI: ReviewCodeDiff(Prompt)
+    activate AI
+    AI->>AI: Call Gemini API
+    AI-->>ReviewR: Result (Markdown)
+    deactivate AI
+    ReviewR-->>Git: Cleanup()
+    ReviewR-->>Pipe: ReviewResult
+    deactivate ReviewR
+
+    Note over Pipe, Slack: 4. 公開・通知フェーズ (Publish)
+    Pipe->>PublishR: Run(ctx, req)
+    activate PublishR
+    PublishR->>Pub: Publish(ctx, req.StorageURI, meta)
+    Pub->>Pub: Convert to HTML (pkg/textformat)
+    Pub->>Pub: Upload to Cloud (pkg/cloud)
+    Pub-->>PublishR: Public URL
+    PublishR->>Slack: Notify(publicURL, req)
+    deactivate PublishR
+    Pipe-->>Main: 完了
+```
+
+---
 
 ## ✨ 技術スタック (Technology Stack)
 
@@ -30,7 +95,7 @@
 | **CLI フレームワーク** | **Cobra** | コマンドライン引数（フラグ）の解析とサブコマンド構造 (`generic`, `publish`) の構築に使用します。 |
 | **コアレビュー機能** | **[`github.com/shouni/gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
 
------
+---
 
 ## 🛠️ 事前準備と環境設定
 
