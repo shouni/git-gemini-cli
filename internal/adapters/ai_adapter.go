@@ -12,7 +12,11 @@ import (
 
 // NewCodeReviewAI は adapters.CodeReviewAI のインスタンスを構築します。
 func NewCodeReviewAI(ctx context.Context, cfg *config.Config) (domain.CodeReviewAI, error) {
-	codeReviewAI, err := coreAdapters.NewGeminiAdapter(ctx, cfg.GeminiModel)
+	opt := coreAdapters.GeminiOptions{
+		ProjectID: cfg.ProjectID,
+		APIKey:    cfg.GeminiAPIKey,
+	}
+	codeReviewAI, err := coreAdapters.NewGeminiAdapter(ctx, opt)
 	if err != nil {
 		return nil, fmt.Errorf("CodeReviewAIアダプターの構築に失敗しました: %w", err)
 	}

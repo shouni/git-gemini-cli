@@ -9,7 +9,6 @@ import (
 
 	"git-gemini-cli/internal/builder"
 	"git-gemini-cli/internal/domain"
-	"git-gemini-cli/internal/pipeline"
 )
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
@@ -61,7 +60,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := appCtx.Pipeline.Execute(ctx, req); err != nil {
-		if errors.Is(err, pipeline.ErrSkipReview) {
+		if errors.Is(err, domain.ErrSkipReview) {
 			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
 			return nil
 		}
