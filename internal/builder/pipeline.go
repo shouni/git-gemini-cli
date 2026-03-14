@@ -4,7 +4,6 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/prompts"
 	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
 
 	"git-gemini-cli/internal/adapters"
@@ -45,7 +44,7 @@ func buildReviewRunner(
 	}
 
 	// 3. Prompt Builder の構築
-	promptBuilder, err := prompts.NewBuilder()
+	promptBuilder, err := adapters.NewPromptAdapter()
 	if err != nil {
 		return nil, fmt.Errorf("Prompt Builder の構築に失敗しました: %w", err)
 	}
