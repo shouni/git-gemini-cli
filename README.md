@@ -46,7 +46,7 @@ sequenceDiagram
     participant Cont as internal/app/container
     participant Pipe as internal/pipeline
     participant ReviewR as internal/runner/review_runner
-    participant Git as internal/adapter/git_adapter
+    participant Git as internal/adapters/git_adapter
     participant AI as internal/adapters/ai_adapter
     participant PublishR as internal/runner/publish_runner
     participant Pub as pkg/core/publisher

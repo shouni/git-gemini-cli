@@ -13,10 +13,10 @@ type ReviewPipeline struct {
 }
 
 // NewReviewPipeline はレビューと公開のランナーを受け取り、ReviewPipeline を初期化します。
-func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPipeline {
+func NewReviewPipeline(reviewer domain.ReviewRunner, publisher domain.PublishRunner) *ReviewPipeline {
 	return &ReviewPipeline{
-		reviewer:  r,
-		publisher: p,
+		reviewer:  reviewer,
+		publisher: publisher,
 	}
 }
 
