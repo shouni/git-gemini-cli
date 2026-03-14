@@ -2,8 +2,6 @@ package pipeline
 
 import (
 	"context"
-	"errors"
-
 	"git-gemini-cli/internal/domain"
 )
 
@@ -23,9 +21,6 @@ func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPip
 // Execute はレビューリクエストの全工程（実行から公開まで）をオーケストレートします。
 func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) error {
 	result, err := p.Review(ctx, req)
-	if errors.Is(err, domain.ErrSkipReview) {
-		return nil
-	}
 	if err != nil {
 		return err
 	}
