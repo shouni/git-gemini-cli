@@ -3,72 +3,47 @@ package pipeline
 import (
 	"context"
 	"errors"
-	"fmt"
-	"log/slog"
 
-	"git-gemini-cli/internal/builder"
-	"git-gemini-cli/internal/config"
+	"git-gemini-cli/internal/domain"
 )
 
 // ErrSkipReview は、レビュー対象の差分が存在しないためにパイプラインがスキップされたことを示すエラーです。
 var ErrSkipReview = errors.New("差分が見つからなかったためレビューをスキップしました")
 
-// Review は、すべての依存関係を構築し、レビューパイプラインを実行します。
-// 実行結果の文字列とエラーを返します。
-func Review(
-	ctx context.Context,
-	cfg config.ReviewConfig,
-) (string, error) {
-	reviewRunner, err := builder.BuildReviewRunner(ctx, cfg)
-	if err != nil {
-		// BuildReviewRunner が内部でアダプタやビルダーの構築エラーをラップして返す
-		return "", fmt.Errorf("レビュー実行器の構築に失敗しました: %w", err)
-	}
-
-	reviewResult, err := reviewRunner.Run(ctx, cfg)
-	if err != nil {
-		return "", err
-	}
-
-	if reviewResult == "" {
-		slog.Info(ErrSkipReview.Error())
-		return "", ErrSkipReview
-	}
-
-	return reviewResult, nil
+// ReviewPipeline はパイプラインの実行に必要な外部依存関係を保持するサービス構造体です。
+type ReviewPipeline struct {
+	reviewRunner  domain.ReviewRunner
+	publishRunner domain.PublishRunner
 }
 
-// Publish は、すべての依存関係を構築し、パブリッシュパイプラインを実行します。
-func Publish(
-	ctx context.Context,
-	cfg config.PublishConfig,
-	reviewResult string,
-) error {
-	// クラウドストレージに保存し、そのURLを通知
-	publishRunner, err := builder.BuildPublishRunner(ctx, cfg)
-	if err != nil {
-		return fmt.Errorf("PublishRunnerの構築に失敗しました: %w", err)
+func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPipeline {
+	return &ReviewPipeline{
+		reviewRunner:  r,
+		publishRunner: p,
 	}
-
-	err = publishRunner.Run(ctx, cfg, reviewResult)
-	if err != nil {
-		return fmt.Errorf("公開処理の実行に失敗しました: %w", err)
-	}
-
-	return nil
 }
 
-// ReviewAndPublish は、レビューと公開処理を統合して実行します。
-// レビューがスキップされた場合は、ErrSkipReview を返します。
-func ReviewAndPublish(ctx context.Context, cfg config.PublishConfig) error {
-	reviewResult, err := Review(ctx, cfg.ReviewConfig)
+// Execute はレビューリクエストの全工程（実行から公開まで）をオーケストレートします。
+func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) error {
+	result, err := p.reviewRunner.Run(ctx, req)
 	if err != nil {
 		return err
 	}
-
-	if err = Publish(ctx, cfg, reviewResult); err != nil {
-		return err
+	if result == "" {
+		return ErrSkipReview
 	}
+	publishReq := req
+	publishReq.ReviewMarkdown = result
 
-	return nil
+	return p.publishRunner.Run(ctx, publishReq)
+}
+
+// Review はレビュー処理をします。
+func (p *ReviewPipeline) Review(ctx context.Context, req domain.ReviewRequest) (string, error) {
+	return p.reviewRunner.Run(ctx, req)
+}
+
+// Publish は公開処理をします。
+func (p *ReviewPipeline) Publish(ctx context.Context, req domain.ReviewRequest) error {
+	return p.publishRunner.Run(ctx, req)
 }

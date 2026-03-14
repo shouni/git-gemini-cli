@@ -4,12 +4,12 @@ import (
 	"errors"
 	"fmt"
 	"log/slog"
-	"os"
-
-	"git-gemini-cli/internal/config"
-	"git-gemini-cli/internal/pipeline"
 
 	"github.com/spf13/cobra"
+
+	"git-gemini-cli/internal/builder"
+	"git-gemini-cli/internal/domain"
+	"git-gemini-cli/internal/pipeline"
 )
 
 // PublishFlags は GCS/S3 への公開フラグを保持します。
@@ -44,22 +44,31 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	// パイプラインを実行し、結果を受け取る
-	publishCfg := config.PublishConfig{
-		ReviewConfig:    ReviewConfig,
-		StorageURI:      publishFlags.URI,
-		SlackWebhookURL: os.Getenv("SLACK_WEBHOOK_URL"),
+	appCtx, err := builder.BuildContainer(ctx, &ReviewConfig)
+	if err != nil {
+		// コンテナの構築エラーをラップして返す
+		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
+	}
+	defer func() {
+		if closeErr := appCtx.Close(); closeErr != nil {
+			slog.ErrorContext(ctx, "コンテナのクローズに失敗しました", "error", closeErr)
+		}
+	}()
+
+	req := domain.ReviewRequest{
+		Config:     ReviewConfig,
+		StorageURI: publishFlags.URI,
 	}
 
-	if err := pipeline.ReviewAndPublish(ctx, publishCfg); err != nil {
+	if err := appCtx.Pipeline.Execute(ctx, req); err != nil {
 		if errors.Is(err, pipeline.ErrSkipReview) {
-			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", publishCfg.StorageURI)
+			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
 			return nil
 		}
 		return fmt.Errorf("レビューおよび公開パイプラインの実行に失敗しました: %w", err)
 	}
 
-	slog.Info("処理完了", "uri", publishCfg.StorageURI)
+	slog.Info("処理完了", "uri", req.StorageURI)
 
 	return nil
 }

@@ -11,13 +11,13 @@ import (
 	"github.com/shouni/go-notifier/pkg/slack"
 	"github.com/shouni/go-utils/urlpath"
 
-	"git-gemini-cli/internal/config"
+	"git-gemini-cli/internal/domain"
 )
 
-// SlackAdapter は SlackNotifier インターフェースを満たす具象型です。
+// SlackAdapter は、Slack APIと連携し、Webhookを介してメッセージを投稿するためのアダプタを表します。
 type SlackAdapter struct {
-	webhookURL  string // Webhook URLを保持
 	slackClient *slack.Client
+	webhookURL  string
 }
 
 // NewSlackAdapter は新しいアダプターインスタンスを作成します。
@@ -37,21 +37,20 @@ func NewSlackAdapter(httpClient httpkit.RequestExecutor, webhookURL string) (*Sl
 	}
 
 	return &SlackAdapter{
-		webhookURL:  webhookURL,
 		slackClient: client,
+		webhookURL:  webhookURL,
 	}, nil
 }
 
-// Notify は Slack への通知を実行します。
-// publicURL をリンク先として、Slack に投稿します。
-func (s *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string, cfg config.ReviewConfig) error {
+// Notify は Slack への通知を実行します。 publicURL をリンク先として、Slack に投稿します。
+func (s *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string, req domain.ReviewRequest) error {
 	if s.webhookURL == "" || s.slackClient == nil {
 		slog.Info("Slack通知が無効化されているか、クライアントが未初期化のためスキップします。", "storage_uri", storageURI)
 		return nil
 	}
 
 	title := "✅ AIコードレビュー結果がアップロードされました。"
-	content := s.buildSlackContent(publicURL, storageURI, cfg)
+	content := s.buildSlackContent(publicURL, storageURI, req)
 
 	if err := s.slackClient.SendTextWithHeader(ctx, title, content); err != nil {
 		return fmt.Errorf("Slackへの結果URL投稿に失敗しました: %w", err)
@@ -62,7 +61,8 @@ func (s *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string,
 }
 
 // buildSlackContent は投稿メッセージの本文を組み立てます。
-func (s *SlackAdapter) buildSlackContent(publicURL, storageURI string, cfg config.ReviewConfig) string {
+func (s *SlackAdapter) buildSlackContent(publicURL, storageURI string, req domain.ReviewRequest) string {
+	cfg := req.Config
 	repoPath := urlpath.GetRepositoryPath(cfg.RepoURL)
 	content := fmt.Sprintf(
 		"*詳細URL:* <%s|%s>\n"+

@@ -7,9 +7,9 @@ import (
 
 const DefaultHTTPTimeout = 30 * time.Second
 
-// ReviewConfig はAIコードレビューに必要なすべての設定を含みます。
+// Config はAIコードレビューに必要なすべての設定を含みます。
 // この構造体は、コマンドライン引数からサービスロジックへ設定を渡すための共通のデータモデルです。
-type ReviewConfig struct {
+type Config struct {
 	ReviewMode            string
 	GeminiModel           string
 	RepoURL               string
@@ -19,24 +19,20 @@ type ReviewConfig struct {
 	LocalPath             string
 	SkipHostKeyCheck      bool
 	UseExternalGitCommand bool
-}
-
-type PublishConfig struct {
-	ReviewConfig    ReviewConfig
-	StorageURI      string
-	SlackWebhookURL string
+	SlackWebhookURL       string
 }
 
 // Normalize は設定値の文字列フィールドから前後の空白を一括で削除します。
-func (rc *ReviewConfig) Normalize() {
-	if rc == nil {
+func (c *Config) Normalize() {
+	if c == nil {
 		return
 	}
-	rc.RepoURL = strings.TrimSpace(rc.RepoURL)
-	rc.BaseBranch = strings.TrimSpace(rc.BaseBranch)
-	rc.FeatureBranch = strings.TrimSpace(rc.FeatureBranch)
-	rc.LocalPath = strings.TrimSpace(rc.LocalPath)
-	rc.ReviewMode = strings.TrimSpace(rc.ReviewMode)
-	rc.GeminiModel = strings.TrimSpace(rc.GeminiModel)
-	rc.SSHKeyPath = strings.TrimSpace(rc.SSHKeyPath)
+	c.RepoURL = strings.TrimSpace(c.RepoURL)
+	c.BaseBranch = strings.TrimSpace(c.BaseBranch)
+	c.FeatureBranch = strings.TrimSpace(c.FeatureBranch)
+	c.LocalPath = strings.TrimSpace(c.LocalPath)
+	c.ReviewMode = strings.TrimSpace(c.ReviewMode)
+	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
+	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
+	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
 }
