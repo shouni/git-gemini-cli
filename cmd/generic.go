@@ -9,7 +9,6 @@ import (
 
 	"git-gemini-cli/internal/builder"
 	"git-gemini-cli/internal/domain"
-	"git-gemini-cli/internal/pipeline"
 )
 
 // genericCmd は 'generic' サブコマンドを定義します。
@@ -46,7 +45,7 @@ func genericCommand(cmd *cobra.Command, args []string) error {
 		Config: ReviewConfig,
 	}
 	reviewResult, err := appCtx.Pipeline.Review(ctx, req)
-	if errors.Is(err, pipeline.ErrSkipReview) {
+	if errors.Is(err, domain.ErrSkipReview) {
 		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
 		return nil
 	}

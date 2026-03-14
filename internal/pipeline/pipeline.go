@@ -7,9 +7,6 @@ import (
 	"git-gemini-cli/internal/domain"
 )
 
-// ErrSkipReview は、レビュー対象の差分が存在しないためにパイプラインがスキップされたことを示すエラーです。
-var ErrSkipReview = errors.New("差分が見つからなかったためレビューをスキップしました")
-
 // ReviewPipeline はパイプラインの実行に必要な外部依存関係を保持するサービス構造体です。
 type ReviewPipeline struct {
 	reviewRunner  domain.ReviewRunner
@@ -25,8 +22,8 @@ func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPip
 
 // Execute はレビューリクエストの全工程（実行から公開まで）をオーケストレートします。
 func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) error {
-	result, err := p.reviewRunner.Run(ctx, req)
-	if errors.Is(err, ErrSkipReview) {
+	result, err := p.Review(ctx, req)
+	if errors.Is(err, domain.ErrSkipReview) {
 		return nil
 	}
 	if err != nil {
@@ -45,7 +42,7 @@ func (p *ReviewPipeline) Review(ctx context.Context, req domain.ReviewRequest) (
 		return "", err
 	}
 	if result == "" {
-		return "", ErrSkipReview
+		return "", domain.ErrSkipReview
 	}
 
 	return result, nil
