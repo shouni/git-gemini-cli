@@ -6,32 +6,27 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/domain"
+	core "github.com/shouni/gemini-reviewer-core/pkg/domain"
 
-	"git-gemini-cli/internal/config"
+	"git-gemini-cli/internal/domain"
 )
 
-// ReviewRunner は、コードレビューのビジネスロジックを実行し、レビュー結果を生成するインターフェースです。
-type ReviewRunner interface {
-	Run(ctx context.Context, cfg config.ReviewConfig) (string, error)
-}
-
-// DefaultReviewRunner はコードレビューのビジネスロジックを実行します。
+// ReviewRunner はコードレビューのビジネスロジックを実行します。
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
-type DefaultReviewRunner struct {
-	gitService    domain.GitService
-	codeReviewAI  domain.CodeReviewAI
+type ReviewRunner struct {
+	gitService    core.GitService
+	codeReviewAI  core.CodeReviewAI
 	promptBuilder domain.PromptBuilder
 }
 
-// NewDefaultReviewRunner は DefaultReviewRunner の新しいインスタンスを生成します。
+// NewReviewRunner は ReviewRunner の新しいインスタンスを生成します。
 // 依存関係はコンストラクタ経由で注入されます。
-func NewDefaultReviewRunner(
-	git domain.GitService,
-	codeReviewAI domain.CodeReviewAI,
+func NewReviewRunner(
+	git core.GitService,
+	codeReviewAI core.CodeReviewAI,
 	pb domain.PromptBuilder,
-) *DefaultReviewRunner {
-	return &DefaultReviewRunner{
+) *ReviewRunner {
+	return &ReviewRunner{
 		gitService:    git,
 		codeReviewAI:  codeReviewAI,
 		promptBuilder: pb,
@@ -39,12 +34,13 @@ func NewDefaultReviewRunner(
 }
 
 // Run はGit Diffを取得し、Gemini AIでレビューを実行します。
-func (r *DefaultReviewRunner) Run(
+func (r *ReviewRunner) Run(
 	ctx context.Context,
-	cfg config.ReviewConfig,
+	req domain.ReviewRequest,
 ) (string, error) {
 
 	slog.Info("Gitリポジトリのセットアップと差分取得を開始します。")
+	cfg := req.Config
 	// Gitリポジトリのクローンまたは更新
 	err := r.gitService.CloneOrUpdate(ctx, cfg.RepoURL)
 	if err != nil {
@@ -76,7 +72,7 @@ func (r *DefaultReviewRunner) Run(
 
 	// プロンプトの生成
 	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
-	data := domain.TemplateData{
+	data := core.TemplateData{
 		DiffContent: codeDiff,
 	}
 	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, data)

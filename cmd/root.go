@@ -5,15 +5,15 @@ import (
 	"os"
 	"path/filepath"
 
-	"git-gemini-cli/internal/config"
-
 	"github.com/shouni/clibase"
 	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
+
+	"git-gemini-cli/internal/config"
 )
 
 // ReviewConfig は、レビュー実行のパラメータです
-var ReviewConfig config.ReviewConfig
+var ReviewConfig config.Config
 
 const baseRepoDirName = "reviewerRepos"
 
@@ -51,6 +51,8 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 		ReviewConfig.LocalPath = urlpath.SanitizeURLToUniquePath(ReviewConfig.RepoURL, baseRepoDirName)
 		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", ReviewConfig.LocalPath)
 	}
+
+	ReviewConfig.SlackWebhookURL = os.Getenv("SLACK_WEBHOOK_URL")
 
 	return nil
 }

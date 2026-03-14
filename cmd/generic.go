@@ -5,9 +5,11 @@ import (
 	"fmt"
 	"log/slog"
 
-	"git-gemini-cli/internal/pipeline"
-
 	"github.com/spf13/cobra"
+
+	"git-gemini-cli/internal/builder"
+	"git-gemini-cli/internal/domain"
+	"git-gemini-cli/internal/pipeline"
 )
 
 // genericCmd は 'generic' サブコマンドを定義します。
@@ -28,8 +30,22 @@ var genericCmd = &cobra.Command{
 func genericCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
+	appCtx, err := builder.BuildContainer(ctx, &ReviewConfig)
+	if err != nil {
+		// コンテナの構築エラーをラップして返す
+		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
+	}
+	defer func() {
+		if closeErr := appCtx.Close(); closeErr != nil {
+			slog.ErrorContext(ctx, "コンテナのクローズに失敗しました", "error", closeErr)
+		}
+	}()
+
 	// 1. パイプラインを実行し、結果を受け取る
-	reviewResult, err := pipeline.Review(ctx, ReviewConfig)
+	req := domain.ReviewRequest{
+		Config: ReviewConfig,
+	}
+	reviewResult, err := appCtx.Pipeline.Review(ctx, req)
 	if errors.Is(err, pipeline.ErrSkipReview) {
 		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
 		return nil

@@ -8,10 +8,10 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/domain"
+	core "github.com/shouni/gemini-reviewer-core/pkg/domain"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 
-	"git-gemini-cli/internal/config"
+	"git-gemini-cli/internal/domain"
 )
 
 const (
@@ -19,50 +19,38 @@ const (
 	signedURLExpiration = 30 * time.Minute
 )
 
-// PublisherRunner は、レビュー結果の公開処理を実行する責務を持つインターフェースです。
-type PublisherRunner interface {
-	Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error
-}
-
-// Notifier は 通知機能を提供する契約を定義します。
-// publicURL は外部からアクセス可能なリンク (署名済みURLなど) を示し、
-// storageURI は内部的なストレージの場所 (s3://... など) を示します。
-type Notifier interface {
-	Notify(ctx context.Context, publicURL, storageURI string, cfg config.ReviewConfig) error
-}
-
-// DefaultPublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
-type DefaultPublisherRunner struct {
-	publisher domain.Publisher
+// PublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
+type PublisherRunner struct {
+	publisher core.Publisher
 	urlSigner remoteio.URLSigner
-	notifier  Notifier
+	notifier  domain.Notifier
 }
 
-// NewDefaultPublisherRunner は DefaultPublisherRunner の新しいインスタンスを作成します。
-func NewDefaultPublisherRunner(publisher domain.Publisher, urlSigner remoteio.URLSigner, slackNotifier Notifier) *DefaultPublisherRunner {
-	return &DefaultPublisherRunner{
+// NewPublisherRunner は PublisherRunner の新しいインスタンスを作成します。
+func NewPublisherRunner(publisher core.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier) *PublisherRunner {
+	return &PublisherRunner{
 		publisher: publisher,
 		urlSigner: urlSigner,
-		notifier:  slackNotifier,
+		notifier:  notifier,
 	}
 }
 
 // Run は公開処理のパイプライン全体を実行します。
-func (p *DefaultPublisherRunner) Run(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
+func (p *PublisherRunner) Run(ctx context.Context, req domain.ReviewRequest) error {
 	// 1. ストレージへのアップロード処理
-	if err := p.publishToStorage(ctx, cfg, reviewResult); err != nil {
+	if err := p.publishToStorage(ctx, req); err != nil {
 		return err
 	}
 
-	// 2. 公開URLの生成 (Slack通知の前に行う)
-	publicURL, err := p.getPublicURL(ctx, cfg.StorageURI)
+	// 2. 公開URLの生成
+	publicURL, err := p.getPublicURL(ctx, req.StorageURI)
 	if err != nil {
-		slog.Warn("公開URLの生成に失敗しました。署名なし/静的URIで通知を試みます。", "error", err, "uri", cfg.StorageURI)
-		publicURL = cfg.StorageURI
+		slog.Warn("公開URLの生成に失敗しました。署名なし/静的URIで通知を試みます。", "error", err, "uri", req.StorageURI)
+		publicURL = req.StorageURI
 	}
 
-	// 3. Slack通知処理
-	p.notifyToSlack(ctx, publicURL, cfg)
+	// 3. 通知処理
+	p.notify(ctx, publicURL, req)
 
 	return nil
 }
@@ -70,24 +58,24 @@ func (p *DefaultPublisherRunner) Run(ctx context.Context, cfg config.PublishConf
 // --- プライベートメソッド ---
 
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
-func (p *DefaultPublisherRunner) publishToStorage(ctx context.Context, cfg config.PublishConfig, reviewResult string) error {
-	meta := createReviewData(cfg.ReviewConfig, reviewResult)
-	if err := p.publisher.Publish(ctx, cfg.StorageURI, meta); err != nil {
-		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", cfg.StorageURI, err)
+func (p *PublisherRunner) publishToStorage(ctx context.Context, req domain.ReviewRequest) error {
+	meta := createReviewData(req)
+	if err := p.publisher.Publish(ctx, req.StorageURI, meta); err != nil {
+		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", req.StorageURI, err)
 	}
-	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", cfg.StorageURI)
+	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", req.StorageURI)
 	return nil
 }
 
-// notifyToSlack はSlackに通知を送信します。
-func (p *DefaultPublisherRunner) notifyToSlack(ctx context.Context, publicURL string, cfg config.PublishConfig) {
-	if err := p.notifier.Notify(ctx, publicURL, cfg.StorageURI, cfg.ReviewConfig); err != nil {
+// notify はSlackに通知を送信します。
+func (p *PublisherRunner) notify(ctx context.Context, publicURL string, req domain.ReviewRequest) {
+	if err := p.notifier.Notify(ctx, publicURL, req.StorageURI, req); err != nil {
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、処理を続行します。", "error", err)
 	}
 }
 
 // getPublicURL は URI に応じて署名付きURLを生成するか、公開URLに変換します。
-func (p *DefaultPublisherRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
+func (p *PublisherRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
 	if remoteio.IsGCSURI(storageURI) {
 		if p.urlSigner == nil {
 			return "", fmt.Errorf("GCS URIが指定されましたが、URL Signerが利用不可です。")
@@ -127,11 +115,11 @@ func convertS3URIToPublicURL(s3URI, region string) string {
 }
 
 // createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
-func createReviewData(reviewConfig config.ReviewConfig, reviewResult string) domain.ReviewData {
-	return domain.ReviewData{
-		RepoURL:        reviewConfig.RepoURL,
-		BaseBranch:     reviewConfig.BaseBranch,
-		FeatureBranch:  reviewConfig.FeatureBranch,
-		ReviewMarkdown: reviewResult,
+func createReviewData(req domain.ReviewRequest) core.ReviewData {
+	return core.ReviewData{
+		RepoURL:        req.Config.RepoURL,
+		BaseBranch:     req.Config.BaseBranch,
+		FeatureBranch:  req.Config.FeatureBranch,
+		ReviewMarkdown: req.ReviewMarkdown,
 	}
 }

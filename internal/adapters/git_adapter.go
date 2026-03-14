@@ -10,7 +10,7 @@ import (
 )
 
 // NewGitService は adapters.GitService のインスタンスを構築する Factory 関数です。
-func NewGitService(cfg config.ReviewConfig) domain.GitService {
+func NewGitService(cfg *config.Config) domain.GitService {
 	if cfg.UseExternalGitCommand {
 		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
 		return coreAdapters.NewGitLocalAdapter(
