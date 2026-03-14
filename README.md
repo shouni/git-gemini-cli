@@ -17,7 +17,7 @@
 
 1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
 2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
-3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client ) を経由した Gemini API によるコード分析を実施。
+3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client) を経由した Gemini API によるコード分析を実施。
 4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
 5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
 
@@ -136,7 +136,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 * **温度 (Temperature):** `0.1` に設定されています。
     * この低い温度設定は、応答の安定性を優先し、一貫性のあるコードレビュー結果を生成するために、コアライブラリ側で適用されています。
-* **プロンプト設定:** プロンプトテンプレートファイル (`.md`) は、**コアライブラリのリポジトリ**に配置されており、本ツールでは**変更できません**。内容を確認・変更したい場合は、[`gemini-reviewer-core` ](https://github.com/shouni/gemini-reviewer-core) のリポジトリを参照してください。
+* **プロンプト設定:** プロンプトテンプレートファイル (`.md`) は、**コアライブラリのリポジトリ**に配置されており、本ツールでは**変更できません**。内容を確認・変更したい場合は、[`gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core) のリポジトリを参照してください。
 
 ---
 
