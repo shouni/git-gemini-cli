@@ -1,6 +1,8 @@
 package cmd
 
 import (
+	"fmt"
+
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -9,11 +11,17 @@ import (
 	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 
+	"git-gemini-cli/internal/app"
+	"git-gemini-cli/internal/builder"
 	"git-gemini-cli/internal/config"
 )
 
-// ReviewConfig は、レビュー実行のパラメータです
-var ReviewConfig config.Config
+var (
+	// appContainer は、DIコンテナのインスタンスを保持します
+	appContainer *app.Container
+	// ReviewConfig は、レビュー実行のパラメータです
+	ReviewConfig config.Config
+)
 
 const baseRepoDirName = "reviewerRepos"
 
@@ -23,6 +31,15 @@ func Execute() {
 		Name:     "git-gemini-cli",
 		AddFlags: addAppPersistentFlags,
 		PreRunE:  initAppPreRunE,
+		PostRun: func(cmd *cobra.Command, args []string) {
+			if appContainer != nil {
+				if err := appContainer.Close(); err != nil {
+					slog.Error("コンテナのクローズ中にエラーが発生しました", "error", err)
+				} else {
+					slog.Debug("コンテナを正常にクローズしました")
+				}
+			}
+		},
 		Commands: []*cobra.Command{
 			genericCmd,
 			publishCmd,
@@ -54,6 +71,12 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 		ReviewConfig.LocalPath = urlpath.SanitizeURLToUniquePath(ReviewConfig.RepoURL, baseRepoDirName)
 		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", ReviewConfig.LocalPath)
 	}
+
+	container, err := builder.BuildContainer(cmd.Context(), &ReviewConfig)
+	if err != nil {
+		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
+	}
+	appContainer = container
 
 	return nil
 }

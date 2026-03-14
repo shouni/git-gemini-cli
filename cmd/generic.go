@@ -7,7 +7,6 @@ import (
 
 	"github.com/spf13/cobra"
 
-	"git-gemini-cli/internal/builder"
 	"git-gemini-cli/internal/domain"
 )
 
@@ -27,24 +26,11 @@ var genericCmd = &cobra.Command{
 // genericCommand は、リモートリポジトリのブランチ比較を Gemini AI に依頼し、
 // 結果を標準出力に出力する generic コマンドの実行ロジックです。
 func genericCommand(cmd *cobra.Command, args []string) error {
-	ctx := cmd.Context()
-
-	appCtx, err := builder.BuildContainer(ctx, &ReviewConfig)
-	if err != nil {
-		// コンテナの構築エラーをラップして返す
-		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
-	}
-	defer func() {
-		if closeErr := appCtx.Close(); closeErr != nil {
-			slog.ErrorContext(ctx, "コンテナのクローズに失敗しました", "error", closeErr)
-		}
-	}()
-
 	// 1. パイプラインを実行し、結果を受け取る
 	req := domain.ReviewRequest{
 		Config: ReviewConfig,
 	}
-	reviewResult, err := appCtx.Pipeline.Review(ctx, req)
+	reviewResult, err := appContainer.Pipeline.Review(cmd.Context(), req)
 	if errors.Is(err, domain.ErrSkipReview) {
 		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
 		return nil
