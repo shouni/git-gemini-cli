@@ -6,12 +6,13 @@ import (
 	"git-gemini-cli/internal/domain"
 )
 
-// ReviewPipeline はパイプラインの実行に必要な外部依存関係を保持するサービス構造体です。
+// ReviewPipeline はレビューと公開のランナーを保持し、パイプラインの実行をオーケストレートするサービス構造体です。
 type ReviewPipeline struct {
 	review  domain.ReviewRunner
 	publish domain.PublishRunner
 }
 
+// NewReviewPipeline はレビューと公開のランナーを受け取り、ReviewPipeline を初期化します。
 func NewReviewPipeline(r domain.ReviewRunner, p domain.PublishRunner) *ReviewPipeline {
 	return &ReviewPipeline{
 		review:  r,
