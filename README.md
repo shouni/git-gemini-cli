@@ -49,11 +49,6 @@
 
 ---
 
-![Page 1](./assets/manga_page_1.png)
-![Page 2](./assets/manga_page_2.png)
-
----
-
 ### シーケンス
 
 ```mermaid
@@ -103,6 +98,13 @@ sequenceDiagram
     deactivate PublishR
     Pipe-->>Main: 完了
 ```
+
+---
+
+## 🎨 概要イメージ
+
+![Page 1](./assets/manga_page_1.png)
+![Page 2](./assets/manga_page_2.png)
 
 ---
 
