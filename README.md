@@ -7,7 +7,7 @@
 
 ## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
 
-**Git Gemini CLI** は、AIコードレビューの**コアロジック**を提供する **[github.com/shouni/gemini-reviewer-core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
+**Git Gemini CLI** は、AIコードレビューの**コアロジック**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
 
 ---
 
