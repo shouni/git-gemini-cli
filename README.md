@@ -49,6 +49,11 @@
 
 ---
 
+![Page 1](https://storage.googleapis.com/sh-test-pub/output/git-gemini-cli/manga_page_1.png)
+![Page 2](https://storage.googleapis.com/sh-test-pub/output/git-gemini-cli/manga_page_2.png)
+
+---
+
 ### シーケンス
 
 ```mermaid
