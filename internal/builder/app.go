@@ -29,7 +29,7 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	// 1. HttpClient (全アダプターの基盤)
 	httpClient := httpkit.New(config.DefaultHTTPTimeout)
 
-	// 2. I/O Infrastructure (GCS)
+	// 2. I/O Infrastructure (マルチクラウクラウド対応)
 	rio, err := buildRemoteIO(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize IO components: %w", err)
@@ -59,7 +59,7 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	return appCtx, nil
 }
 
-// buildRemoteIO は、GCS ベースの I/O コンポーネントを初期化します。
+// buildRemoteIO は、 I/O コンポーネントを初期化します。
 func buildRemoteIO(ctx context.Context) (*app.RemoteIO, error) {
 	factory, err := gcsfactory.New(ctx)
 	if err != nil {

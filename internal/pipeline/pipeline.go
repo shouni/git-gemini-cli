@@ -29,7 +29,7 @@ func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) 
 	publishReq := req
 	publishReq.ReviewMarkdown = result
 
-	return p.publisher.Run(ctx, publishReq)
+	return p.Publish(ctx, publishReq)
 }
 
 // Review はレビュー処理をします。
