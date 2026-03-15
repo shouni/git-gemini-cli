@@ -101,6 +101,13 @@ sequenceDiagram
 
 ---
 
+## 🎨 概要イメージ
+
+![Page 1](./assets/manga_page_1.png)
+![Page 2](./assets/manga_page_2.png)
+
+---
+
 ## 🛠️ 事前準備と環境設定
 
 ### 1\. プロジェクトのセットアップとビルド
