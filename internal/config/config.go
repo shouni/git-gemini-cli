@@ -3,6 +3,8 @@ package config
 import (
 	"strings"
 	"time"
+
+	"github.com/shouni/go-utils/envutil"
 )
 
 const DefaultHTTPTimeout = 30 * time.Second
@@ -37,4 +39,18 @@ func (c *Config) Normalize() {
 	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
 	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
 	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
+}
+
+// LoadConfig は環境変数から設定を読み込みます。
+func LoadConfig() *Config {
+	return &Config{
+		ProjectID:       getEnv("GCP_PROJECT_ID", ""),
+		GeminiAPIKey:    getEnv("GEMINI_API_KEY", ""),
+		SlackWebhookURL: getEnv("SLACK_WEBHOOK_URL", ""),
+	}
+}
+
+// getEnv は環境変数を取得し、存在しない場合はデフォルト値を返します。
+func getEnv(key string, defaultValue string) string {
+	return envutil.GetEnv(key, defaultValue)
 }
