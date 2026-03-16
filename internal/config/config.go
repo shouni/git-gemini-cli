@@ -41,6 +41,19 @@ func (c *Config) Normalize() {
 	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
 }
 
+// FillDefaults は、現在の設定で空のフィールドを envCfg の値で補完します。
+func (c *Config) FillDefaults(envCfg *Config) {
+	if c.ProjectID == "" {
+		c.ProjectID = envCfg.ProjectID
+	}
+	if c.GeminiAPIKey == "" {
+		c.GeminiAPIKey = envCfg.GeminiAPIKey
+	}
+	if c.SlackWebhookURL == "" {
+		c.SlackWebhookURL = envCfg.SlackWebhookURL
+	}
+}
+
 // LoadConfig は環境変数から設定を読み込みます。
 func LoadConfig() *Config {
 	return &Config{
