@@ -44,13 +44,8 @@ func (c *Config) Normalize() {
 // LoadConfig は環境変数から設定を読み込みます。
 func LoadConfig() *Config {
 	return &Config{
-		ProjectID:       getEnv("GCP_PROJECT_ID", ""),
-		GeminiAPIKey:    getEnv("GEMINI_API_KEY", ""),
-		SlackWebhookURL: getEnv("SLACK_WEBHOOK_URL", ""),
+		ProjectID:       envutil.GetEnv("GCP_PROJECT_ID", ""),
+		GeminiAPIKey:    envutil.GetEnv("GEMINI_API_KEY", ""),
+		SlackWebhookURL: envutil.GetEnv("SLACK_WEBHOOK_URL", ""),
 	}
-}
-
-// getEnv は環境変数を取得し、存在しない場合はデフォルト値を返します。
-func getEnv(key string, defaultValue string) string {
-	return envutil.GetEnv(key, defaultValue)
 }
