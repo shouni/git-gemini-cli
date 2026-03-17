@@ -11,12 +11,17 @@ import (
 	"git-gemini-cli/internal/domain"
 )
 
+// TemplateData はレビュープロンプトのテンプレートに渡すデータ構造です。
+type TemplateData struct {
+	DiffContent string
+}
+
 // ReviewRunner はコードレビューのビジネスロジックを実行します。
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
 type ReviewRunner struct {
 	gitService    core.GitService
 	codeReviewAI  core.CodeReviewAI
-	promptBuilder domain.PromptBuilder
+	promptBuilder core.PromptBuilder
 }
 
 // NewReviewRunner は ReviewRunner の新しいインスタンスを生成します。
@@ -24,7 +29,7 @@ type ReviewRunner struct {
 func NewReviewRunner(
 	git core.GitService,
 	codeReviewAI core.CodeReviewAI,
-	pb domain.PromptBuilder,
+	pb core.PromptBuilder,
 ) *ReviewRunner {
 	return &ReviewRunner{
 		gitService:    git,
@@ -73,7 +78,7 @@ func (r *ReviewRunner) Run(
 
 	// プロンプトの生成
 	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
-	data := domain.TemplateData{
+	data := TemplateData{
 		DiffContent: codeDiff,
 	}
 	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, data)
