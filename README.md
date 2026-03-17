@@ -103,8 +103,8 @@ sequenceDiagram
 
 ## 🎨 概要イメージ
 
-![Page 1](./doc/manga_page_1.png)
-![Page 2](./doc/manga_page_2.png)
+![Page 1](./docs/manga_page_1.png)
+![Page 2](./docs/manga_page_2.png)
 
 ---
 
