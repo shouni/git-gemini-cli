@@ -21,16 +21,6 @@ type PublishRunner interface {
 	Run(ctx context.Context, req ReviewRequest) error
 }
 
-// TemplateData はレビュープロンプトのテンプレートに渡すデータ構造です。
-type TemplateData struct {
-	DiffContent string
-}
-
-// PromptBuilder は、プロンプト文字列を生成する責務を定義します。
-type PromptBuilder interface {
-	Build(mode string, TemplateData any) (string, error)
-}
-
 // Notifier は、生成されたコンテンツまたはエラーに関する通知を指定されたターゲットまたはチャネルに送信するためのインターフェイスです。
 type Notifier interface {
 	// Notify は、パブリック URL やストレージ URL などのメタデータを含む通知をターゲットに送信します。
