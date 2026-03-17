@@ -73,7 +73,7 @@ func (r *ReviewRunner) Run(
 
 	// プロンプトの生成
 	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
-	data := core.TemplateData{
+	data := domain.TemplateData{
 		DiffContent: codeDiff,
 	}
 	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, data)
