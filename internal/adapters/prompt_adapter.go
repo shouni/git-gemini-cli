@@ -9,7 +9,7 @@ import (
 
 // NewPromptAdapter は動的に読み込んだテンプレートを使用して Builder を構築します。
 func NewPromptAdapter() (domain.PromptBuilder, error) {
-	templates, err := assets.Load("prompts", "prompt_")
+	templates, err := assets.Load(assets.PromptFiles, assets.PromptDir, assets.PromptPrefix)
 	if err != nil {
 		return nil, err
 	}
