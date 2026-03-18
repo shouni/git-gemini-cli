@@ -21,7 +21,7 @@ type PublishRunner interface {
 	Run(ctx context.Context, req ReviewRequest) error
 }
 
-// PromptBuilder  は、AIプロンプトを構築するンターフェースです。
+// PromptBuilder は、AIプロンプトを構築するインターフェースです。
 type PromptBuilder interface {
 	// Build は、要求されたモードに応じて適切なテンプレートを実行します。
 	Build(mode string, data any) (string, error)
