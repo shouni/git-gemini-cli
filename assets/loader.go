@@ -22,6 +22,10 @@ func Load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
 		}
 
 		fileName := entry.Name()
+		if !strings.HasPrefix(fileName, prefix) {
+			continue
+		}
+
 		modeName := strings.TrimPrefix(
 			strings.TrimSuffix(fileName, path.Ext(fileName)),
 			prefix,
