@@ -3,7 +3,7 @@ package adapters
 import (
 	"embed"
 	"fmt"
-	"path/filepath"
+	"path"
 	"strings"
 
 	"github.com/shouni/gemini-reviewer-core/pkg/domain"
@@ -38,14 +38,14 @@ func loadTemplates(fs embed.FS, rootDir string) (map[string]string, error) {
 
 		fileName := entry.Name()
 		modeName := strings.TrimPrefix(
-			strings.TrimSuffix(fileName, filepath.Ext(fileName)),
+			strings.TrimSuffix(fileName, path.Ext(fileName)),
 			"prompt_",
 		)
 
-		path := filepath.Join(rootDir, fileName)
-		content, err := fs.ReadFile(path)
+		filePath := path.Join(rootDir, fileName)
+		content, err := fs.ReadFile(filePath)
 		if err != nil {
-			return nil, fmt.Errorf("ファイル %s の読み込みに失敗: %w", path, err)
+			return nil, fmt.Errorf("ファイル %s の読み込みに失敗: %w", filePath, err)
 		}
 
 		templates[modeName] = string(content)
