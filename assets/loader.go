@@ -7,7 +7,7 @@ import (
 	"strings"
 )
 
-// load は指定されたファイルシステム(fileSystem)のディレクトリ(rootDir)から、 指定された接頭辞(prefix)を持つファイルを読み込み、マップとして返します。
+// load は指定されたファイルシステム内のディレクトリから、指定された接頭辞を持つファイルを読み込み、マップとして返します。
 func load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
 	entries, err := fs.ReadDir(fileSystem, rootDir)
 	if err != nil {
