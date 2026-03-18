@@ -21,7 +21,7 @@ type TemplateData struct {
 type ReviewRunner struct {
 	gitService    core.GitService
 	codeReviewAI  core.CodeReviewAI
-	promptBuilder core.PromptBuilder
+	promptBuilder domain.PromptBuilder
 }
 
 // NewReviewRunner は ReviewRunner の新しいインスタンスを生成します。
@@ -29,7 +29,7 @@ type ReviewRunner struct {
 func NewReviewRunner(
 	git core.GitService,
 	codeReviewAI core.CodeReviewAI,
-	pb core.PromptBuilder,
+	pb domain.PromptBuilder,
 ) *ReviewRunner {
 	return &ReviewRunner{
 		gitService:    git,
