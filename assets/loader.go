@@ -7,8 +7,8 @@ import (
 	"strings"
 )
 
-// Load は指定されたファイルシステム(fileSystem)のディレクトリ(rootDir)から、 指定された接頭辞(prefix)を持つファイルを読み込み、マップとして返します。
-func Load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
+// load は指定されたファイルシステム(fileSystem)のディレクトリ(rootDir)から、 指定された接頭辞(prefix)を持つファイルを読み込み、マップとして返します。
+func load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
 	templates := make(map[string]string)
 
 	entries, err := fs.ReadDir(fileSystem, rootDir)
