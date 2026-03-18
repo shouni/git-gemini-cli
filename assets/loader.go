@@ -9,12 +9,12 @@ import (
 
 // load は指定されたファイルシステム(fileSystem)のディレクトリ(rootDir)から、 指定された接頭辞(prefix)を持つファイルを読み込み、マップとして返します。
 func load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
-	templates := make(map[string]string)
-
 	entries, err := fs.ReadDir(fileSystem, rootDir)
 	if err != nil {
 		return nil, fmt.Errorf("ディレクトリ %s の読み込みに失敗: %w", rootDir, err)
 	}
+
+	templates := make(map[string]string, len(entries))
 
 	for _, entry := range entries {
 		if entry.IsDir() {
