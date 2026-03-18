@@ -1,17 +1,17 @@
 package assets
 
 import (
-	"embed"
 	"fmt"
+	"io/fs"
 	"path"
 	"strings"
 )
 
-// Load は指定されたファイルシステム(fs)のディレクトリ(rootDir)から、 指定された接頭辞(prefix)を持つファイルを読み込み、マップとして返します。
-func Load(fs embed.FS, rootDir, prefix string) (map[string]string, error) {
+// Load は指定されたファイルシステム(fileSystem)のディレクトリ(rootDir)から、 指定された接頭辞(prefix)を持つファイルを読み込み、マップとして返します。
+func Load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
 	templates := make(map[string]string)
 
-	entries, err := fs.ReadDir(rootDir)
+	entries, err := fs.ReadDir(fileSystem, rootDir)
 	if err != nil {
 		return nil, fmt.Errorf("ディレクトリ %s の読み込みに失敗: %w", rootDir, err)
 	}
@@ -28,7 +28,7 @@ func Load(fs embed.FS, rootDir, prefix string) (map[string]string, error) {
 		)
 
 		filePath := path.Join(rootDir, fileName)
-		content, err := fs.ReadFile(filePath)
+		content, err := fs.ReadFile(fileSystem, filePath)
 		if err != nil {
 			return nil, fmt.Errorf("ファイル %s の読み込みに失敗: %w", filePath, err)
 		}
