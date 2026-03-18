@@ -1,6 +1,10 @@
 package assets
 
-import "embed"
+import (
+	"embed"
+
+	"github.com/shouni/go-prompt-kit/resource"
+)
 
 const (
 	promptDir    = "prompts"
@@ -12,5 +16,5 @@ var PromptFiles embed.FS
 
 // LoadPrompts は埋め込まれたプロンプトファイルを読み込みます。
 func LoadPrompts() (map[string]string, error) {
-	return load(PromptFiles, promptDir, promptPrefix)
+	return resource.Load(PromptFiles, promptDir, promptPrefix)
 }
