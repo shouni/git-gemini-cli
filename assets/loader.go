@@ -37,6 +37,9 @@ func Load(fileSystem fs.FS, rootDir, prefix string) (map[string]string, error) {
 			return nil, fmt.Errorf("ファイル %s の読み込みに失敗: %w", filePath, err)
 		}
 
+		if _, exists := templates[modeName]; exists {
+			return nil, fmt.Errorf("テンプレート名が衝突しています: %s (ファイル: %s)", modeName, filePath)
+		}
 		templates[modeName] = string(content)
 	}
 
