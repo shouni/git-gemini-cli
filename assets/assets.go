@@ -1,13 +1,8 @@
 package assets
 
-import _ "embed"
+import "embed"
 
-var (
-	// DetailPrompt は詳細レビュー用のプロンプトテンプレートです。
-	//go:embed prompts/prompt_detail.md
-	DetailPrompt string
+const PromptFilesDir = "prompts"
 
-	// ReleasePrompt はリリース判定用のプロンプトテンプレートです。
-	//go:embed prompts/prompt_release.md
-	ReleasePrompt string
-)
+//go:embed prompts/prompt_*.md
+var PromptFiles embed.FS
