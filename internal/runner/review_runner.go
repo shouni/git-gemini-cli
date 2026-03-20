@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
-	core "github.com/shouni/gemini-reviewer-core/pkg/domain"
+	"github.com/shouni/gemini-reviewer-core/pkg/ports"
 
 	"git-gemini-cli/internal/domain"
 )
@@ -19,16 +19,16 @@ type TemplateData struct {
 // ReviewRunner はコードレビューのビジネスロジックを実行します。
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
 type ReviewRunner struct {
-	gitService    core.GitService
-	codeReviewAI  core.CodeReviewAI
+	gitService    ports.GitService
+	codeReviewAI  ports.CodeReviewAI
 	promptBuilder domain.PromptBuilder
 }
 
 // NewReviewRunner は ReviewRunner の新しいインスタンスを生成します。
 // 依存関係はコンストラクタ経由で注入されます。
 func NewReviewRunner(
-	git core.GitService,
-	codeReviewAI core.CodeReviewAI,
+	git ports.GitService,
+	codeReviewAI ports.CodeReviewAI,
 	pb domain.PromptBuilder,
 ) *ReviewRunner {
 	return &ReviewRunner{

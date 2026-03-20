@@ -8,7 +8,7 @@ import (
 	"strings"
 	"time"
 
-	core "github.com/shouni/gemini-reviewer-core/pkg/domain"
+	"github.com/shouni/gemini-reviewer-core/pkg/ports"
 	"github.com/shouni/go-remote-io/pkg/remoteio"
 
 	"git-gemini-cli/internal/domain"
@@ -21,13 +21,13 @@ const (
 
 // PublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
 type PublisherRunner struct {
-	publisher core.Publisher
+	publisher ports.Publisher
 	urlSigner remoteio.URLSigner
 	notifier  domain.Notifier
 }
 
 // NewPublisherRunner は PublisherRunner の新しいインスタンスを作成します。
-func NewPublisherRunner(publisher core.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier) *PublisherRunner {
+func NewPublisherRunner(publisher ports.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier) *PublisherRunner {
 	return &PublisherRunner{
 		publisher: publisher,
 		urlSigner: urlSigner,
@@ -115,8 +115,8 @@ func convertS3URIToPublicURL(s3URI, region string) string {
 }
 
 // createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
-func createReviewData(req domain.ReviewRequest) core.ReviewData {
-	return core.ReviewData{
+func createReviewData(req domain.ReviewRequest) ports.ReviewData {
+	return ports.ReviewData{
 		RepoURL:        req.Config.RepoURL,
 		BaseBranch:     req.Config.BaseBranch,
 		FeatureBranch:  req.Config.FeatureBranch,
