@@ -6,7 +6,7 @@ import (
 	"log/slog"
 	"strings"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/ports"
+	"github.com/shouni/gemini-reviewer-core/ports"
 
 	"git-gemini-cli/internal/domain"
 )

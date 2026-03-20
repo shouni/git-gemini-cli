@@ -4,7 +4,7 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/publisher"
+	"github.com/shouni/gemini-reviewer-core/publisher"
 
 	"git-gemini-cli/internal/adapters"
 	"git-gemini-cli/internal/app"
