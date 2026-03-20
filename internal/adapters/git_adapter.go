@@ -4,13 +4,13 @@ import (
 	"log/slog"
 
 	coreAdapters "github.com/shouni/gemini-reviewer-core/pkg/adapters"
-	"github.com/shouni/gemini-reviewer-core/pkg/domain"
+	"github.com/shouni/gemini-reviewer-core/pkg/ports"
 
 	"git-gemini-cli/internal/config"
 )
 
 // NewGitService は adapters.GitService のインスタンスを構築する Factory 関数です。
-func NewGitService(cfg *config.Config) domain.GitService {
+func NewGitService(cfg *config.Config) ports.GitService {
 	if cfg.UseExternalGitCommand {
 		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
 		return coreAdapters.NewGitLocalAdapter(

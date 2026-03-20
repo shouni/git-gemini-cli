@@ -69,11 +69,11 @@ func buildPublishRunner(
 		return nil, fmt.Errorf("RemoteIO が設定されていません")
 	}
 
-	htmlRunner, err := publisher.NewMarkdownToHtmlRunner(ctx)
+	htmlRunner, err := publisher.NewMarkdownConverterAdapter()
 	if err != nil {
 		return nil, fmt.Errorf("MarkdownToHtmlRunnerの初期化に失敗しました: %w", err)
 	}
-	publisherService, err := publisher.NewPublisher(ctx, rio.Writer, htmlRunner)
+	publisherService, err := publisher.NewPublisher(rio.Writer, htmlRunner)
 	if err != nil {
 		return nil, fmt.Errorf("Publisherの初期化に失敗しました: %w", err)
 	}

@@ -21,7 +21,7 @@ type SlackAdapter struct {
 }
 
 // NewSlackAdapter は新しいアダプターインスタンスを作成します。
-func NewSlackAdapter(httpClient httpkit.RequestExecutor, webhookURL string) (*SlackAdapter, error) {
+func NewSlackAdapter(httpClient httpkit.RequestExecutor, webhookURL string) (domain.Notifier, error) {
 	if webhookURL == "" {
 		// オプショナル機能として扱い、空のままインスタンスを返す
 		return &SlackAdapter{}, nil
