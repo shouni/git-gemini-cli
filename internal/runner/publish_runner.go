@@ -8,8 +8,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/shouni/gemini-reviewer-core/pkg/ports"
-	"github.com/shouni/go-remote-io/pkg/remoteio"
+	"github.com/shouni/gemini-reviewer-core/ports"
+	"github.com/shouni/go-remote-io/remoteio"
 
 	"git-gemini-cli/internal/domain"
 )

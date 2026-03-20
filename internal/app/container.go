@@ -3,8 +3,8 @@ package app
 import (
 	"errors"
 
-	"github.com/shouni/go-http-kit/pkg/httpkit"
-	"github.com/shouni/go-remote-io/pkg/remoteio"
+	"github.com/shouni/go-http-kit/httpkit"
+	"github.com/shouni/go-remote-io/remoteio"
 
 	"git-gemini-cli/internal/config"
 	"git-gemini-cli/internal/domain"
@@ -18,7 +18,7 @@ type Container struct {
 	// Business Logic
 	Pipeline domain.Pipeline
 	// External Adapters
-	HTTPClient httpkit.RequestExecutor
+	HTTPClient httpkit.Requester
 	Notifier   domain.Notifier
 }
 

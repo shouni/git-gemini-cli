@@ -3,8 +3,8 @@ package adapters
 import (
 	"log/slog"
 
-	coreAdapters "github.com/shouni/gemini-reviewer-core/pkg/adapters"
-	"github.com/shouni/gemini-reviewer-core/pkg/ports"
+	coreAdapters "github.com/shouni/gemini-reviewer-core/adapters"
+	"github.com/shouni/gemini-reviewer-core/ports"
 
 	"git-gemini-cli/internal/config"
 )
