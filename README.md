@@ -17,7 +17,7 @@
 | :--- | :--- | :--- |
 | **言語** | **Go (Golang)** | ツールの開発言語。クロスプラットフォームでの高速な実行を実現します。 |
 | **CLI フレームワーク** | **Cobra** | コマンドライン引数（フラグ）の解析とサブコマンド構造 (`generic`, `publish`) の構築に使用します。 |
-| **コアレビュー機能** | **[`github.com/shouni/gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
+| **コアレビュー機能** | **[`gemini-reviewer-core`](https://github.com/shouni/gemini-reviewer-core)** | **Git操作、AI通信、HTML変換**といった中核のレビューロジックを担う外部ライブラリです。 |
 
 ---
 
@@ -43,9 +43,9 @@
 
 1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
 2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
-3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`github.com/shouni/go-gemini-client`](https://github.com/shouni/go-gemini-client) を経由した Gemini API によるコード分析を実施。
-4. **変換/公開:** [`github.com/shouni/go-text-format`](https://github.com/shouni/go-text-format) で Markdown を HTML へ変換し、[`github.com/shouni/go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
-5. **通知:** [`github.com/shouni/go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
+3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`go-gemini-client`](https://github.com/shouni/go-gemini-client) を経由した Gemini API によるコード分析を実施。
+4. **変換/公開:** [`go-prompt-kit`](https://github.com/shouni/go-prompt-kit) で Markdown を HTML へ変換し、[`go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
+5. **通知:** [`go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
 
 ---
 
