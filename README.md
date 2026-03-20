@@ -230,4 +230,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ### 📜 ライセンス (License)
 
-このプロジェクトは [MIT License](https://opensource.org/licenses/MIT) の下で公開されています。
+* デフォルトキャラクター: VOICEVOX:ずんだもん、VOICEVOX:四国めたん
+* このプロジェクトは [MIT License](https://opensource.org/licenses/MIT) の下で公開されています。
+
+---
