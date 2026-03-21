@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -76,7 +77,9 @@ func TestPublishRunner_Run(t *testing.T) {
 					return nil
 				}
 				s.signFunc = func(ctx context.Context, uri, method string, exp time.Duration) (string, error) {
-					// signedURLExpiration が正しく渡されているか確認
+					if exp != testSignedURLExpiration {
+						return "", fmt.Errorf("unexpected expiration: got %v, want %v", exp, testSignedURLExpiration)
+					}
 					return "https://signed-url.com", nil
 				}
 				n.notifyFunc = func(ctx context.Context, pURL, sURI string, r domain.ReviewRequest) error {

@@ -27,7 +27,7 @@ func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) 
 	result, err := p.Review(ctx, req)
 	if err != nil {
 		if errors.Is(err, domain.ErrSkipReview) {
-			slog.Info("レビュー結果が空のため、公開処理をスキップします")
+			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
 			return nil
 		}
 		return err
