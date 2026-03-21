@@ -2,6 +2,8 @@ package pipeline
 
 import (
 	"context"
+	"errors"
+	"log/slog"
 
 	"git-gemini-cli/internal/domain"
 )
@@ -24,6 +26,10 @@ func NewReviewPipeline(reviewer domain.ReviewRunner, publisher domain.PublishRun
 func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) error {
 	result, err := p.Review(ctx, req)
 	if err != nil {
+		if errors.Is(err, domain.ErrSkipReview) {
+			slog.Info("レビュー結果が空のため、公開処理をスキップします")
+			return nil
+		}
 		return err
 	}
 	publishReq := req
