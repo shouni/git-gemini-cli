@@ -101,7 +101,7 @@ sequenceDiagram
     Pipe->>PublishR: Run(ctx, req)
     activate PublishR
     PublishR->>Pub: Publish(ctx, req.StorageURI, meta)
-    Pub->>Pub: Convert to HTML (mdcast)
+    Pub->>Pub: Convert to HTML (md)
     Pub->>Pub: Upload to Cloud (remoteio)
     Pub-->>PublishR: Public URL
     PublishR->>Slack: Notify(publicURL, req)
