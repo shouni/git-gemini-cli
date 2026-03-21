@@ -3,6 +3,7 @@ package runner
 import (
 	"context"
 	"errors"
+	"fmt"
 	"testing"
 	"time"
 
@@ -11,6 +12,9 @@ import (
 	"git-gemini-cli/internal/config"
 	"git-gemini-cli/internal/domain"
 )
+
+// テスト用の定数（実装側と合わせる、あるいはテスト内で定義）
+const testSignedURLExpiration = 24 * time.Hour
 
 // --- Mock 定義 ---
 
@@ -29,7 +33,6 @@ type mockURLSigner struct {
 	signFunc func(ctx context.Context, uri, method string, exp time.Duration) (string, error)
 }
 
-// GenerateSignedURL は引数 exp を time.Duration として扱います
 func (m *mockURLSigner) GenerateSignedURL(ctx context.Context, uri, method string, exp time.Duration) (string, error) {
 	if m.signFunc == nil {
 		return "", nil
@@ -50,7 +53,9 @@ func (m *mockNotifier) Notify(ctx context.Context, publicURL, storageURI string,
 
 // --- テスト本体 ---
 
-func TestPublisherRunner_Run(t *testing.T) {
+func TestPublishRunner_Run(t *testing.T) {
+	t.Parallel() // 親テストの並行実行を許可
+
 	ctx := context.Background()
 
 	// 共通のテストリクエスト
@@ -68,19 +73,20 @@ func TestPublisherRunner_Run(t *testing.T) {
 		wantErr   bool
 	}{
 		{
-			name: "正常系: GCSへのアップロードと署名付きURLでの通知が成功する",
+			name: "正常系: ストレージ保存、URL署名、通知がすべて成功する",
 			setupMock: func(p *mockPublisher, s *mockURLSigner, n *mockNotifier) {
-				p.publishFunc = func(ctx context.Context, uri string, data ports.ReviewData) error { return nil }
+				p.publishFunc = func(ctx context.Context, uri string, data ports.ReviewData) error {
+					return nil
+				}
 				s.signFunc = func(ctx context.Context, uri, method string, exp time.Duration) (string, error) {
-					// 30分が指定されているか検証可能
-					if exp != 30*time.Minute {
-						return "", errors.New("invalid expiration")
+					if exp != testSignedURLExpiration {
+						return "", fmt.Errorf("unexpected expiration: got %v, want %v", exp, testSignedURLExpiration)
 					}
 					return "https://signed-url.com", nil
 				}
 				n.notifyFunc = func(ctx context.Context, pURL, sURI string, r domain.ReviewRequest) error {
-					if pURL != "https://signed-url.com" {
-						return errors.New("unexpected public URL")
+					if pURL != "https://signed-url.com" || sURI != req.StorageURI {
+						return errors.New("unexpected notification parameters")
 					}
 					return nil
 				}
@@ -88,16 +94,16 @@ func TestPublisherRunner_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "準正常系: URL署名に失敗しても通知自体は実行される (Fallback)",
+			name: "準正常系: URL署名に失敗しても通知は StorageURI で実行される (Fallback)",
 			setupMock: func(p *mockPublisher, s *mockURLSigner, n *mockNotifier) {
 				p.publishFunc = func(ctx context.Context, uri string, data ports.ReviewData) error { return nil }
 				s.signFunc = func(ctx context.Context, uri, method string, exp time.Duration) (string, error) {
 					return "", errors.New("sign error")
 				}
 				n.notifyFunc = func(ctx context.Context, pURL, sURI string, r domain.ReviewRequest) error {
-					// 署名失敗時は StorageURI がそのまま渡される
+					// 署名失敗時は StorageURI が publicURL として利用される
 					if pURL != req.StorageURI {
-						return errors.New("should use fallback URI")
+						return errors.New("should use fallback StorageURI as public URL")
 					}
 					return nil
 				}
@@ -105,24 +111,27 @@ func TestPublisherRunner_Run(t *testing.T) {
 			wantErr: false,
 		},
 		{
-			name: "異常系: ストレージへの保存に失敗した場合はエラーを返す",
+			name: "異常系: ストレージ保存に失敗した場合は即座にエラーを返す",
 			setupMock: func(p *mockPublisher, s *mockURLSigner, n *mockNotifier) {
 				p.publishFunc = func(ctx context.Context, uri string, data ports.ReviewData) error {
-					return errors.New("storage error")
+					return errors.New("storage failure")
 				}
-				// Publishが失敗した時、署名や通知は呼ばれないことを前提とする（実装通り）
 			},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt // ループ変数のキャプチャ
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel() // サブテストの並行実行
+
 			mPub := &mockPublisher{}
 			mSig := &mockURLSigner{}
 			mNot := &mockNotifier{}
 			tt.setupMock(mPub, mSig, mNot)
 
+			// 依存性を注入して Runner を作成
 			runner := NewPublishRunner(mPub, mSig, mNot)
 			err := runner.Run(ctx, req)
 
@@ -134,6 +143,8 @@ func TestPublisherRunner_Run(t *testing.T) {
 }
 
 func Test_convertS3URIToPublicURL(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		s3URI    string
 		region   string
@@ -152,7 +163,9 @@ func Test_convertS3URIToPublicURL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.s3URI, func(t *testing.T) {
+			t.Parallel()
 			got := convertS3URIToPublicURL(tt.s3URI, tt.region)
 			if got != tt.expected {
 				t.Errorf("convertS3URIToPublicURL() = %v, want %v", got, tt.expected)

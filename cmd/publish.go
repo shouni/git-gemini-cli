@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -60,10 +59,6 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	if err := appCtx.Pipeline.Execute(ctx, req); err != nil {
-		if errors.Is(err, domain.ErrSkipReview) {
-			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
-			return nil
-		}
 		return fmt.Errorf("レビューおよび公開パイプラインの実行に失敗しました: %w", err)
 	}
 
