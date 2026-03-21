@@ -67,7 +67,7 @@ sequenceDiagram
     participant Main as main.go
     participant Cont as internal/app/container
     participant Pipe as internal/pipeline
-    participant ReviewR as internal/runner/review_runner
+    participant ReviewR as internal/runner/review
     participant Git as internal/adapters/git
     participant AI as internal/adapters/ai
     participant PublishR as internal/runner/publish
