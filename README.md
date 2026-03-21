@@ -68,11 +68,11 @@ sequenceDiagram
     participant Cont as internal/app/container
     participant Pipe as internal/pipeline
     participant ReviewR as internal/runner/review_runner
-    participant Git as internal/adapters/git_adapter
-    participant AI as internal/adapters/ai_adapter
-    participant PublishR as internal/runner/publish_runner
+    participant Git as internal/adapters/git
+    participant AI as internal/adapters/ai
+    participant PublishR as internal/runner/publish
     participant Pub as pkg/core/publisher
-    participant Slack as internal/adapters/slack_adapter
+    participant Slack as internal/adapters/slack
 
     Note over Main, Cont: 1. DIコンテナ構築
     Main->>Cont: NewContainer(Config)
@@ -101,8 +101,8 @@ sequenceDiagram
     Pipe->>PublishR: Run(ctx, req)
     activate PublishR
     PublishR->>Pub: Publish(ctx, req.StorageURI, meta)
-    Pub->>Pub: Convert to HTML (pkg/textformat)
-    Pub->>Pub: Upload to Cloud (pkg/cloud)
+    Pub->>Pub: Convert to HTML (mdcast)
+    Pub->>Pub: Upload to Cloud (remoteio)
     Pub-->>PublishR: Public URL
     PublishR->>Slack: Notify(publicURL, req)
     deactivate PublishR
