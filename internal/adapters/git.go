@@ -3,7 +3,7 @@ package adapters
 import (
 	"log/slog"
 
-	coreAdapters "github.com/shouni/gemini-reviewer-core/adapters"
+	"github.com/shouni/gemini-reviewer-core/git"
 	"github.com/shouni/gemini-reviewer-core/ports"
 
 	"git-gemini-cli/internal/config"
@@ -13,19 +13,19 @@ import (
 func NewGitService(cfg *config.Config) ports.GitService {
 	if cfg.UseExternalGitCommand {
 		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
-		return coreAdapters.NewGitLocalAdapter(
+		return git.NewGitLocalAdapter(
 			cfg.LocalPath,
 			cfg.SSHKeyPath,
-			coreAdapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
-			coreAdapters.WithBaseBranch(cfg.BaseBranch),
+			git.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
+			git.WithBaseBranch(cfg.BaseBranch),
 		)
 	}
 
 	slog.Debug("GitService: コアライブラリのアダプタ (go-git) を使用します。")
-	return coreAdapters.NewGitAdapter(
+	return git.NewGitAdapter(
 		cfg.LocalPath,
 		cfg.SSHKeyPath,
-		coreAdapters.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
-		coreAdapters.WithBaseBranch(cfg.BaseBranch),
+		git.WithInsecureSkipHostKeyCheck(cfg.SkipHostKeyCheck),
+		git.WithBaseBranch(cfg.BaseBranch),
 	)
 }
