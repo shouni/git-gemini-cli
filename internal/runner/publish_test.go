@@ -54,6 +54,8 @@ func (m *mockNotifier) Notify(ctx context.Context, publicURL, storageURI string,
 // --- テスト本体 ---
 
 func TestPublishRunner_Run(t *testing.T) {
+	t.Parallel() // 親テストの並行実行を許可
+
 	ctx := context.Background()
 
 	// 共通のテストリクエスト
@@ -114,14 +116,16 @@ func TestPublishRunner_Run(t *testing.T) {
 				p.publishFunc = func(ctx context.Context, uri string, data ports.ReviewData) error {
 					return errors.New("storage failure")
 				}
-				// 以降のモックは呼ばれないはずなので設定不要
 			},
 			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt // ループ変数のキャプチャ
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel() // サブテストの並行実行
+
 			mPub := &mockPublisher{}
 			mSig := &mockURLSigner{}
 			mNot := &mockNotifier{}
@@ -139,6 +143,8 @@ func TestPublishRunner_Run(t *testing.T) {
 }
 
 func Test_convertS3URIToPublicURL(t *testing.T) {
+	t.Parallel()
+
 	tests := []struct {
 		s3URI    string
 		region   string
@@ -157,7 +163,9 @@ func Test_convertS3URIToPublicURL(t *testing.T) {
 	}
 
 	for _, tt := range tests {
+		tt := tt
 		t.Run(tt.s3URI, func(t *testing.T) {
+			t.Parallel()
 			got := convertS3URIToPublicURL(tt.s3URI, tt.region)
 			if got != tt.expected {
 				t.Errorf("convertS3URIToPublicURL() = %v, want %v", got, tt.expected)

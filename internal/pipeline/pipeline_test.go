@@ -10,6 +10,7 @@ import (
 
 // --- Mock 定義 ---
 
+// MockReviewRunner は ReviewRunner のモックです。
 type MockReviewRunner struct {
 	RunFunc func(ctx context.Context, req domain.ReviewRequest) (string, error)
 }
@@ -29,6 +30,8 @@ func (m *MockPublishRunner) Run(ctx context.Context, req domain.ReviewRequest) e
 // --- テスト本体 ---
 
 func TestReviewPipeline_Execute(t *testing.T) {
+	t.Parallel() // 親テストの並行実行を許可
+
 	ctx := context.Background()
 	req := domain.ReviewRequest{
 		StorageURI: "gs://bucket/path.md",
@@ -36,6 +39,8 @@ func TestReviewPipeline_Execute(t *testing.T) {
 	expectedMarkdown := "# Result"
 
 	t.Run("正常系: レビューから公開まで成功すること", func(t *testing.T) {
+		t.Parallel() // サブテストの並行実行を許可
+
 		reviewCalled := false
 		publishCalled := false
 
@@ -64,13 +69,14 @@ func TestReviewPipeline_Execute(t *testing.T) {
 	})
 
 	t.Run("正常系: 差分なし(ErrSkipReview)の場合はエラーにならず公開も呼ばれないこと", func(t *testing.T) {
+		t.Parallel()
+
 		reviewCalled := false
 		publishCalled := false
 
 		mockReviewer := &MockReviewRunner{
 			RunFunc: func(ctx context.Context, r domain.ReviewRequest) (string, error) {
 				reviewCalled = true
-				// ここで明示的にスキップエラーを返す
 				return "", domain.ErrSkipReview
 			},
 		}
@@ -84,20 +90,20 @@ func TestReviewPipeline_Execute(t *testing.T) {
 		p := NewReviewPipeline(mockReviewer, mockPublisher)
 		err := p.Execute(ctx, req)
 
-		// Pipelineがエラーを握りつぶして nil を返すことを確認
 		if err != nil {
 			t.Errorf("expected nil error for ErrSkipReview, got %v", err)
 		}
 		if !reviewCalled {
 			t.Error("reviewer should be called")
 		}
-		// Publisherが呼ばれていないことを確認
 		if publishCalled {
 			t.Error("publisher should not be called when review is skipped")
 		}
 	})
 
 	t.Run("異常系: レビューが失敗（スキップ以外）した場合はエラーを返す", func(t *testing.T) {
+		t.Parallel()
+
 		errReview := errors.New("ai error")
 		mockReviewer := &MockReviewRunner{
 			RunFunc: func(ctx context.Context, r domain.ReviewRequest) (string, error) {
