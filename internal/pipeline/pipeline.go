@@ -25,13 +25,14 @@ func NewReviewPipeline(reviewer domain.ReviewRunner, publisher domain.PublishRun
 // Execute はレビューリクエストの全工程（実行から公開まで）をオーケストレートします。
 func (p *ReviewPipeline) Execute(ctx context.Context, req domain.ReviewRequest) error {
 	result, err := p.Review(ctx, req)
+	if errors.Is(err, domain.ErrSkipReview) {
+		slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
+		return nil
+	}
 	if err != nil {
-		if errors.Is(err, domain.ErrSkipReview) {
-			slog.Info("レビュー結果が空のため、公開処理をスキップします", "uri", req.StorageURI)
-			return nil
-		}
 		return err
 	}
+
 	publishReq := req
 	publishReq.ReviewMarkdown = result
 
