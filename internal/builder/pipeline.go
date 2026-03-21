@@ -78,7 +78,7 @@ func buildPublishRunner(
 		return nil, fmt.Errorf("Publisherの初期化に失敗しました: %w", err)
 	}
 
-	publishRunner := runner.NewPublisherRunner(
+	publishRunner := runner.NewPublishRunner(
 		publisherService,
 		rio.Signer,
 		slack,
