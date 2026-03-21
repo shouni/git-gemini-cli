@@ -123,7 +123,7 @@ func TestPublisherRunner_Run(t *testing.T) {
 			mNot := &mockNotifier{}
 			tt.setupMock(mPub, mSig, mNot)
 
-			runner := NewPublisherRunner(mPub, mSig, mNot)
+			runner := NewPublishRunner(mPub, mSig, mNot)
 			err := runner.Run(ctx, req)
 
 			if (err != nil) != tt.wantErr {

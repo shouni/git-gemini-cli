@@ -19,16 +19,16 @@ const (
 	signedURLExpiration = 30 * time.Minute
 )
 
-// PublisherRunner は、レビュー結果の公開処理を実行する具象構造体です。
-type PublisherRunner struct {
+// PublishRunner は、レビュー結果の公開処理を実行する具象構造体です。
+type PublishRunner struct {
 	publisher ports.Publisher
 	urlSigner remoteio.URLSigner
 	notifier  domain.Notifier
 }
 
-// NewPublisherRunner は PublisherRunner の新しいインスタンスを作成します。
-func NewPublisherRunner(publisher ports.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier) *PublisherRunner {
-	return &PublisherRunner{
+// NewPublishRunner は PublisherRunner の新しいインスタンスを作成します。
+func NewPublishRunner(publisher ports.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier) *PublishRunner {
+	return &PublishRunner{
 		publisher: publisher,
 		urlSigner: urlSigner,
 		notifier:  notifier,
@@ -36,7 +36,7 @@ func NewPublisherRunner(publisher ports.Publisher, urlSigner remoteio.URLSigner,
 }
 
 // Run は公開処理のパイプライン全体を実行します。
-func (p *PublisherRunner) Run(ctx context.Context, req domain.ReviewRequest) error {
+func (p *PublishRunner) Run(ctx context.Context, req domain.ReviewRequest) error {
 	// 1. ストレージへのアップロード処理
 	if err := p.publishToStorage(ctx, req); err != nil {
 		return err
@@ -58,7 +58,7 @@ func (p *PublisherRunner) Run(ctx context.Context, req domain.ReviewRequest) err
 // --- プライベートメソッド ---
 
 // publishToStorage はレビュー結果をクラウドストレージにアップロードします。
-func (p *PublisherRunner) publishToStorage(ctx context.Context, req domain.ReviewRequest) error {
+func (p *PublishRunner) publishToStorage(ctx context.Context, req domain.ReviewRequest) error {
 	meta := createReviewData(req)
 	if err := p.publisher.Publish(ctx, req.StorageURI, meta); err != nil {
 		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", req.StorageURI, err)
@@ -68,14 +68,14 @@ func (p *PublisherRunner) publishToStorage(ctx context.Context, req domain.Revie
 }
 
 // notify はSlackに通知を送信します。
-func (p *PublisherRunner) notify(ctx context.Context, publicURL string, req domain.ReviewRequest) {
+func (p *PublishRunner) notify(ctx context.Context, publicURL string, req domain.ReviewRequest) {
 	if err := p.notifier.Notify(ctx, publicURL, req.StorageURI, req); err != nil {
 		slog.Error("Slack通知の実行中にエラーが発生しましたが、処理を続行します。", "error", err)
 	}
 }
 
 // getPublicURL は URI に応じて署名付きURLを生成するか、公開URLに変換します。
-func (p *PublisherRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
+func (p *PublishRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
 	if remoteio.IsGCSURI(storageURI) {
 		if p.urlSigner == nil {
 			return "", fmt.Errorf("GCS URIが指定されましたが、URL Signerが利用不可です。")
