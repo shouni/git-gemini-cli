@@ -192,19 +192,19 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 # main と develop の差分をリリース判定モードで実行
 ./bin/git_gemini_cli generic \
   -m "release" \
-  --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
+  --repo-url "git@github.com:user/my-awesome-project.git" \
   --base-branch "main" \
   --feature-branch "develop"
 ```
 
 ---
 
-### 2\. クラウド保存モード (`publish`) 🌟 (マルチクラウド・**通知対応**)
+### 2. クラウド保存モード (`publish`) 
 
-リモートリポジトリのブランチ比較を行い、その結果を **URI で指定されたクラウドストレージ（GCSまたはS3）** に、**AIが出力したMarkdownを専用ライブラリで変換したスタイル付き HTML** として保存します。このモードは、レビュー結果のアーカイブや、CI/CDパイプラインでのレポート生成を目的としています。
+リモートリポジトリのブランチ比較を行い、その結果を **GCS（Google Cloud Storage）** などのクラウドストレージに、**スタイル付き HTML** として保存します。保存完了後、チームへの共有を自動化するための通知機能も備えています。
 
 **💡 Slack通知について:**
-`SLACK_WEBHOOK_URL` 環境変数が設定されている場合、保存成功後に**クラウドストレージに保存された結果の公開URL**が自動的にSlackに通知されます。
+`SLACK_WEBHOOK_URL` が設定されている場合、保存成功後に **GCS上の保存先URI（または署名付きURL）** を含めたレビュー完了レポートをSlackへ自動投稿します。
 
 #### 実行コマンド例 (GCSへの保存)
 
@@ -212,29 +212,19 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 # feature/publish の差分をレビューし、GCSにHTML結果を保存
 ./bin/git_gemini_cli publish \
   -m "detail" \
-  --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
+  --repo-url "git@github.com:user/my-awesome-project.git" \
   --base-branch "main" \
   --feature-branch "feature/publish" \
-  --uri "gs://review-archive-bucket/reviews/2025/latest_review.html" 
-```
-
-#### 実行コマンド例 (S3への保存)
-
-```bash
-# feature/s3-save の差分をレビューし、S3にHTML結果を保存
-./bin/git_gemini_cli publish \
-  -m "release" \
-  --repo-url "git@example.backlog.jp:PROJECT/repo-name.git" \
-  --base-branch "main" \
-  --feature-branch "feature/s3-save" \
-  --uri "s3://review-report-bucket/reports/2025/latest_release.html" 
+  --bucket "my-awesome-bucket" \
+  --path "reports/latest.html"
 ```
 
 #### 固有フラグ (クラウド連携)
 
 | フラグ | ショートカット | 説明 | 必須 | デフォルト値 |
 | :--- | :--- | :--- | :--- | :--- |
-| `--uri` | **`-s`** | 書き込み先 URI (**`gs://...`** または **`s3://...`** をサポート) | ✅ | **なし** |
+| `--bucket` | なし | 保存先の GCS バケット名 | ✅ | **なし** |
+| `--path` | なし | バケット内のオブジェクトパス (例: `reports/latest.html`) | ✅ | **なし** |
 
 ---
 
