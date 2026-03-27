@@ -1,10 +1,8 @@
 package builder
 
 import (
-	"fmt"
 	"log/slog"
 
-	"github.com/google/uuid"
 	"github.com/shouni/gemini-reviewer-core/git"
 	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/shouni/go-utils/urlpath"
@@ -43,11 +41,10 @@ func (g *GitFactory) Create(repoURL, baseBranch string) ports.GitService {
 	return git.NewGitAdapter(localPath, g.sshKeyPath, opts...)
 }
 
-// generateLocalPath はリポジトリURLから実行ごとにユニークなローカルパスを生成します。
+// generateLocalPath はリポジトリURLからユニークなローカルパスを生成します。
 func (g *GitFactory) generateLocalPath(repoURL string) string {
 	const baseRepoDirName = "reviewer-repos"
 	basePath := urlpath.SanitizeURLToUniquePath(repoURL, baseRepoDirName)
-	uniqueID := uuid.New().String()
 
-	return fmt.Sprintf("%s-%s", basePath, uniqueID)
+	return basePath
 }
