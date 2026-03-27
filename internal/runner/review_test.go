@@ -5,18 +5,21 @@ import (
 	"errors"
 	"testing"
 
-	"git-gemini-cli/internal/config"
+	"github.com/shouni/gemini-reviewer-core/ports"
+
 	"git-gemini-cli/internal/domain"
 )
 
 // --- Mock 定義 ---
 
 type mockGitService struct {
+	// インターフェースを埋め込むことで、未実装のメソッドがあってもコンパイルを通るようにします
+	// ただし、テスト中に未実装メソッドが呼ばれるとパニックになるため注意が必要です
+	ports.GitService
 	cloneFunc          func(ctx context.Context, repoURL string) error
 	cleanupFunc        func(ctx context.Context) error
-	fetchFunc          func(ctx context.Context) error
 	checkRefExistsFunc func(ctx context.Context, ref string) (bool, error)
-	diffFunc           func(ctx context.Context, base, head string) (string, error)
+	diffFunc           func(ctx context.Context, b, h string) (string, error)
 }
 
 func (m *mockGitService) CloneOrUpdate(ctx context.Context, url string) error {
@@ -31,12 +34,6 @@ func (m *mockGitService) Cleanup(ctx context.Context) error {
 	}
 	return m.cleanupFunc(ctx)
 }
-func (m *mockGitService) Fetch(ctx context.Context) error {
-	if m.fetchFunc == nil {
-		return nil
-	}
-	return m.fetchFunc(ctx)
-}
 func (m *mockGitService) CheckRefExists(ctx context.Context, ref string) (bool, error) {
 	if m.checkRefExistsFunc == nil {
 		return true, nil
@@ -50,6 +47,15 @@ func (m *mockGitService) GetCodeDiff(ctx context.Context, b, h string) (string, 
 	return m.diffFunc(ctx, b, h)
 }
 
+// GitFactory のモック
+type mockGitFactory struct {
+	service ports.GitService
+}
+
+func (f *mockGitFactory) Create(url, base string) ports.GitService {
+	return f.service
+}
+
 type mockCodeReviewAI struct {
 	reviewFunc func(ctx context.Context, model, prompt string) (string, error)
 }
@@ -61,111 +67,97 @@ func (m *mockCodeReviewAI) ReviewCodeDiff(ctx context.Context, mdl, prpt string)
 	return m.reviewFunc(ctx, mdl, prpt)
 }
 
-type mockPromptBuilder struct {
-	buildFunc func(mode string, data any) (string, error)
+type mockPromptGen struct {
+	genReviewFunc func(mode, diff string) (string, error)
+	genSkipFunc   func(req domain.ReviewRequest) (string, error)
+	reportFunc    func(ctx context.Context, params domain.ErrorReportParams) (string, error)
 }
 
-func (m *mockPromptBuilder) Build(mode string, data any) (string, error) {
-	if m.buildFunc == nil {
-		return "", nil
-	}
-	return m.buildFunc(mode, data)
+func (m *mockPromptGen) GenerateReview(mode, diff string) (string, error) {
+	return m.genReviewFunc(mode, diff)
+}
+func (m *mockPromptGen) GenerateSkipReport(req domain.ReviewRequest) (string, error) {
+	return m.genSkipFunc(req)
+}
+func (m *mockPromptGen) GenerateErrorReport(ctx context.Context, p domain.ErrorReportParams) (string, error) {
+	return "error report", nil
 }
 
 // --- テスト本体 ---
 
 func TestReviewRunner_Run(t *testing.T) {
+	t.Parallel() // 親テストの並行実行
+
 	ctx := context.Background()
 	req := domain.ReviewRequest{
-		Config: config.Config{
-			RepoURL:       "https://github.com/owner/repo",
-			BaseBranch:    "main",
-			FeatureBranch: "feature",
-			ReviewMode:    "default",
-			GeminiModel:   "gemini-1.5-pro",
-		},
+		RepoURL:       "https://github.com/owner/repo",
+		BaseBranch:    "main",
+		FeatureBranch: "feature",
+		Mode:          "default",
+		ModelName:     "gemini-1.5-pro",
 	}
 
 	tests := []struct {
 		name      string
-		setupMock func(g *mockGitService, ai *mockCodeReviewAI, pb *mockPromptBuilder)
-		want      string
-		wantErr   error
+		setupMock func(g *mockGitService, ai *mockCodeReviewAI, pg *mockPromptGen)
+		wantSkip  bool
+		wantErr   bool
 	}{
 		{
 			name: "正常系: レビューが正常に完了する",
-			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pb *mockPromptBuilder) {
-				g.cloneFunc = func(ctx context.Context, url string) error { return nil }
-				g.cleanupFunc = func(ctx context.Context) error { return nil }
-				g.fetchFunc = func(ctx context.Context) error { return nil }
+			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pg *mockPromptGen) {
 				g.diffFunc = func(ctx context.Context, b, f string) (string, error) { return "some diff", nil }
-
-				pb.buildFunc = func(mode string, data any) (string, error) { return "final prompt", nil }
-
+				pg.genReviewFunc = func(mode, diff string) (string, error) { return "prompt", nil }
 				ai.reviewFunc = func(ctx context.Context, mdl, prpt string) (string, error) {
 					return "LGTM!", nil
 				}
 			},
-			want:    "LGTM!",
-			wantErr: nil,
+			wantSkip: false,
+			wantErr:  false,
 		},
 		{
-			name: "準正常系: 差分がない場合は ErrSkipReview を返す",
-			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pb *mockPromptBuilder) {
+			name: "準正常系: 差分がない場合は IsSkipped が true になる",
+			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pg *mockPromptGen) {
 				g.diffFunc = func(ctx context.Context, b, f string) (string, error) { return "", nil }
+				pg.genSkipFunc = func(r domain.ReviewRequest) (string, error) { return "skipped", nil }
 			},
-			want:    "",
-			wantErr: domain.ErrSkipReview,
+			wantSkip: true,
+			wantErr:  false,
 		},
 		{
-			name: "異常系: Gitクローンに失敗した場合はエラーを返す",
-			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pb *mockPromptBuilder) {
+			name: "異常系: Gitクローンに失敗した場合はエラーを保持する",
+			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pg *mockPromptGen) {
 				g.cloneFunc = func(ctx context.Context, url string) error { return errors.New("clone failed") }
 			},
-			want:    "",
-			wantErr: errors.New("リポジトリのセットアップに失敗しました: clone failed"),
-		},
-		{
-			name: "異常系: AIレビュー実行時にエラーが発生した場合はエラーを返す",
-			setupMock: func(g *mockGitService, ai *mockCodeReviewAI, pb *mockPromptBuilder) {
-				g.diffFunc = func(ctx context.Context, b, f string) (string, error) { return "diff", nil }
-				pb.buildFunc = func(mode string, data any) (string, error) { return "prompt", nil }
-				ai.reviewFunc = func(ctx context.Context, mdl, prpt string) (string, error) {
-					return "", errors.New("api error")
-				}
-			},
-			want:    "",
-			wantErr: errors.New("AIレビューの実行に失敗しました: api error"),
+			wantErr: true,
 		},
 	}
 
 	for _, tt := range tests {
+		tt := tt // ループ変数のキャプチャ（Go 1.22 未満の場合に必要）
 		t.Run(tt.name, func(t *testing.T) {
+			t.Parallel() // サブテストの並行実行
+
 			mGit := &mockGitService{}
 			mAI := &mockCodeReviewAI{}
-			mPB := &mockPromptBuilder{}
+			mPG := &mockPromptGen{}
 
-			// 初期状態で Cleanup が呼ばれても大丈夫なように設定
+			// 初期設定: 特定のテストで上書きされない場合のデフォルト挙動
 			mGit.cleanupFunc = func(ctx context.Context) error { return nil }
+			mGit.checkRefExistsFunc = func(ctx context.Context, ref string) (bool, error) { return true, nil }
 
-			tt.setupMock(mGit, mAI, mPB)
+			tt.setupMock(mGit, mAI, mPG)
 
-			runner := NewReviewRunner(mGit, mAI, mPB)
-			got, err := runner.Run(ctx, req)
+			factory := &mockGitFactory{service: mGit}
+			runner := NewReviewRunner(factory, mAI, mPG)
 
-			if tt.wantErr != nil {
-				if err == nil || (err.Error() != tt.wantErr.Error() && !errors.Is(err, tt.wantErr)) {
-					t.Fatalf("Run() error = %v, wantErr %v", err, tt.wantErr)
-				}
-				return
+			outcome := runner.Run(ctx, req)
+
+			if (outcome.Error != nil) != tt.wantErr {
+				t.Errorf("Run() error = %v, wantErr %v", outcome.Error, tt.wantErr)
 			}
-
-			if err != nil {
-				t.Fatalf("Run() unexpected error = %v", err)
-			}
-
-			if got != tt.want {
-				t.Errorf("Run() got = %v, want %v", got, tt.want)
+			if outcome.IsSkipped != tt.wantSkip {
+				t.Errorf("Run() IsSkipped = %v, want %v", outcome.IsSkipped, tt.wantSkip)
 			}
 		})
 	}

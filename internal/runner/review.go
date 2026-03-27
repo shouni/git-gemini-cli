@@ -4,96 +4,125 @@ import (
 	"context"
 	"fmt"
 	"log/slog"
-	"strings"
+	"time"
 
 	"github.com/shouni/gemini-reviewer-core/ports"
 
 	"git-gemini-cli/internal/domain"
 )
 
-// TemplateData はレビュープロンプトのテンプレートに渡すデータ構造です。
-type TemplateData struct {
-	DiffContent string
-}
+const (
+	emptyAPIResponseMessage = "Gemini APIは応答しましたが、空の結果を返しました。"
+)
 
 // ReviewRunner はコードレビューのビジネスロジックを実行します。
 // 必要な依存関係（アダプタ）をフィールドとして保持します。
 type ReviewRunner struct {
-	gitService    ports.GitService
-	codeReviewAI  ports.CodeReviewAI
-	promptBuilder domain.PromptBuilder
+	gitFactory   domain.GitFactory
+	codeReviewAI ports.CodeReviewAI
+	promptGen    domain.PromptGenerator
 }
 
 // NewReviewRunner は ReviewRunner の新しいインスタンスを生成します。
 // 依存関係はコンストラクタ経由で注入されます。
 func NewReviewRunner(
-	git ports.GitService,
+	gitFactory domain.GitFactory,
 	codeReviewAI ports.CodeReviewAI,
-	pb domain.PromptBuilder,
+	promptGen domain.PromptGenerator,
 ) *ReviewRunner {
 	return &ReviewRunner{
-		gitService:    git,
-		codeReviewAI:  codeReviewAI,
-		promptBuilder: pb,
+		gitFactory:   gitFactory,
+		codeReviewAI: codeReviewAI,
+		promptGen:    promptGen,
 	}
 }
 
 // Run はGit Diffを取得し、Gemini AIでレビューを実行します。
-func (r *ReviewRunner) Run(
-	ctx context.Context,
-	req domain.ReviewRequest,
-) (string, error) {
+func (r *ReviewRunner) Run(ctx context.Context, req domain.ReviewRequest) domain.ReviewProcessOutcome {
+	outcome := domain.ReviewProcessOutcome{
+		StartTime: time.Now(),
+	}
 
-	slog.Info("Gitリポジトリのセットアップと差分取得を開始します。")
-	cfg := req.Config
-	// Gitリポジトリのクローンまたは更新
-	err := r.gitService.CloneOrUpdate(ctx, cfg.RepoURL)
+	// 1. Git リソースの生成
+	gitService := r.gitFactory.Create(req.RepoURL, req.BaseBranch)
+	defer r.cleanupGit(ctx, gitService)
+
+	// 2. リポジトリの準備
+	outcome.StepName = "リポジトリの準備"
+	if err := r.prepareRepository(ctx, gitService, req.RepoURL, req.FeatureBranch); err != nil {
+		outcome.Error = err
+		return outcome
+	}
+
+	// 3. 差分の取得
+	outcome.StepName = "コード差分取得"
+	codeDiff, err := gitService.GetCodeDiff(ctx, req.BaseBranch, req.FeatureBranch)
 	if err != nil {
-		return "", fmt.Errorf("リポジトリのセットアップに失敗しました: %w", err)
+		outcome.Error = err
+		return outcome
 	}
 
-	// クリーンアップを遅延実行 (常に実行を保証)
-	defer func() {
-		if cleanupErr := r.gitService.Cleanup(ctx); cleanupErr != nil {
-			slog.Error("Gitリポジトリのクリーンアップに失敗しました。", "error", cleanupErr)
-		}
-	}()
-
-	// リモートから最新の変更をフェッチ
-	if err := r.gitService.Fetch(ctx); err != nil {
-		return "", fmt.Errorf("最新の変更のフェッチに失敗しました: %w", err)
+	// 4. 差分がない場合のスキップ処理
+	if len(codeDiff) == 0 {
+		outcome.StepName = "差分チェック"
+		outcome.IsSkipped = true
+		markdown, err := r.promptGen.GenerateSkipReport(req)
+		outcome.ReviewMarkdown = markdown
+		outcome.Error = err // 生成失敗の可能性も含める
+		return outcome
 	}
 
-	// コード差分を取得
-	codeDiff, err := r.gitService.GetCodeDiff(ctx, cfg.BaseBranch, cfg.FeatureBranch)
+	// 5. AIによるレビュー生成
+	outcome.StepName = "Gemini API呼び出し"
+	markdown, err := r.executeAIReview(ctx, req.Mode, codeDiff, req.ModelName)
+	outcome.ReviewMarkdown = markdown
+	outcome.Error = err
+
+	return outcome
+}
+
+// prepareRepository は、リポジトリを複製し、機能ブランチが存在するかどうかを確認します。
+func (r *ReviewRunner) prepareRepository(ctx context.Context, git ports.GitService, repoURL, branch string) error {
+	slog.InfoContext(ctx, "1. リポジトリをクローン/更新中", "repo_url", repoURL)
+	if err := git.CloneOrUpdate(ctx, repoURL); err != nil {
+		return fmt.Errorf("リポジトリの準備に失敗: %w", err)
+	}
+
+	slog.InfoContext(ctx, "2. フィーチャーブランチの存在を確認中", "branch", branch)
+	exists, err := git.CheckRefExists(ctx, branch)
 	if err != nil {
-		return "", fmt.Errorf("コード差分の取得に失敗しました: %w", err)
+		return fmt.Errorf("ブランチ存在確認に失敗: %w", err)
 	}
+	if !exists {
+		return fmt.Errorf("指定されたフィーチャーブランチ '%s' がリモートに存在しません。", branch)
+	}
+	return nil
+}
 
-	// レビュー対象の差分なし
-	if strings.TrimSpace(codeDiff) == "" {
-		return "", domain.ErrSkipReview
-	}
-	slog.Info("Git差分の取得に成功しました。", "size_bytes", len(codeDiff))
+// executeAIReview は、指定されたdiffとモードでプロンプトを生成し、AIによるコードレビューを実行します。
+func (r *ReviewRunner) executeAIReview(ctx context.Context, mode, codeDiff, model string) (string, error) {
+	slog.InfoContext(ctx, "AIプロンプトを生成・API呼び出し中", "mode", mode)
 
-	// プロンプトの生成
-	slog.InfoContext(ctx, "AIプロンプトを生成中...", "mode", cfg.ReviewMode)
-	data := TemplateData{
-		DiffContent: codeDiff,
-	}
-	finalPrompt, err := r.promptBuilder.Build(cfg.ReviewMode, data)
+	prompt, err := r.promptGen.GenerateReview(mode, codeDiff)
 	if err != nil {
-		return "", fmt.Errorf("プロンプトの組み立てに失敗しました: %w", err)
+		return "", fmt.Errorf("プロンプト生成に失敗: %w", err)
 	}
 
-	// AIレビューの実行
-	slog.Info("AIによるコードレビューを開始します。", "model", cfg.GeminiModel)
-
-	// Gemini Adapterにレビューを依頼
-	reviewResult, err := r.codeReviewAI.ReviewCodeDiff(ctx, cfg.GeminiModel, finalPrompt)
+	content, err := r.codeReviewAI.ReviewCodeDiff(ctx, model, prompt)
 	if err != nil {
-		return "", fmt.Errorf("AIレビューの実行に失敗しました: %w", err)
+		return "", fmt.Errorf("Gemini API呼び出しに失敗: %w", err)
 	}
 
-	return reviewResult, nil
+	if content == "" {
+		slog.WarnContext(ctx, "Gemini API returned an empty response without error.")
+		return emptyAPIResponseMessage, nil
+	}
+	return content, nil
+}
+
+// cleanupGit は、Git リソースのクリーンアップを処理し、クリーンアップ操作が失敗した場合は警告をログに記録します。
+func (r *ReviewRunner) cleanupGit(ctx context.Context, git ports.GitService) {
+	if err := git.Cleanup(ctx); err != nil {
+		slog.WarnContext(ctx, "Gitリソースのクリーンアップに失敗しました", "error", err)
+	}
 }

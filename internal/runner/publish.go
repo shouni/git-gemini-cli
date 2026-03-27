@@ -2,21 +2,17 @@ package runner
 
 import (
 	"context"
+	"errors"
 	"fmt"
+
 	"log/slog"
-	"os"
-	"strings"
 	"time"
 
 	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/shouni/go-remote-io/remoteio"
 
+	"git-gemini-cli/internal/config"
 	"git-gemini-cli/internal/domain"
-)
-
-const (
-	// signedURLExpiration は署名付きURLの有効期限を定義します。
-	signedURLExpiration = 30 * time.Minute
 )
 
 // PublishRunner は、レビュー結果の公開処理を実行する具象構造体です。
@@ -24,102 +20,124 @@ type PublishRunner struct {
 	publisher ports.Publisher
 	urlSigner remoteio.URLSigner
 	notifier  domain.Notifier
+	promptGen domain.PromptGenerator
 }
 
-// NewPublishRunner は PublisherRunner の新しいインスタンスを作成します。
-func NewPublishRunner(publisher ports.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier) *PublishRunner {
+// NewPublishRunner は PublishRunner の新しいインスタンスを作成します。
+func NewPublishRunner(publisher ports.Publisher, urlSigner remoteio.URLSigner, notifier domain.Notifier, promptGen domain.PromptGenerator) *PublishRunner {
 	return &PublishRunner{
 		publisher: publisher,
 		urlSigner: urlSigner,
 		notifier:  notifier,
+		promptGen: promptGen,
 	}
 }
 
-// Run は公開処理のパイプライン全体を実行します。
-func (p *PublishRunner) Run(ctx context.Context, req domain.ReviewRequest) error {
-	// 1. ストレージへのアップロード処理
-	if err := p.publishToStorage(ctx, req); err != nil {
-		return err
-	}
+// Run は 最終結果の構築、エラーハンドリング、GCSへの公開といった後処理を一元的に担います。
+func (p *PublishRunner) Run(
+	ctx context.Context,
+	req domain.ReviewRequest,
+	outcome domain.ReviewProcessOutcome,
+) (domain.ReviewResult, error) {
+	finalDuration := time.Since(outcome.StartTime)
+	var result domain.ReviewResult
+	err := outcome.Error
 
-	// 2. 公開URLの生成
-	publicURL, err := p.getPublicURL(ctx, req.StorageURI)
 	if err != nil {
-		slog.Warn("公開URLの生成に失敗しました。署名なし/静的URIで通知を試みます。", "error", err, "uri", req.StorageURI)
-		publicURL = req.StorageURI
+		// 1. エラー発生時: エラーレポートを生成
+		slog.ErrorContext(ctx, "エラーレポートをGCSに公開準備中", "step", outcome.StepName, "error", err)
+
+		var reportErr error
+		params := domain.ErrorReportParams{
+			OriginalErr: err,
+			Req:         req,
+			Duration:    finalDuration,
+			StepName:    outcome.StepName,
+		}
+		outcome.ReviewMarkdown, reportErr = p.promptGen.GenerateErrorReport(ctx, params)
+
+		// レポート生成自体のエラーがあれば結合する
+		if reportErr != nil {
+			err = errors.Join(err, fmt.Errorf("レポート生成エラー: %w", reportErr))
+		}
+		result = domain.NewFailureResult(req, err, finalDuration)
+
+	} else {
+		// 2. 成功またはスキップ時
+		var finalMessage string
+		if outcome.IsSkipped {
+			finalMessage = "差分が存在しないため、レビューをスキップしました。"
+			slog.InfoContext(ctx, "✅ レビューパイプライン完了 (スキップ)", "duration", finalDuration)
+		} else {
+			finalMessage = "AIコードレビューが正常に完了しました。"
+			slog.InfoContext(ctx, "✅ レビューパイプライン完了", "duration", finalDuration)
+		}
+		result = domain.NewSuccessResult(req, finalMessage, finalDuration)
 	}
 
-	// 3. 通知処理
-	p.notify(ctx, publicURL, req)
+	// 3. GCSへのパブリッシュ実行 (MarkdownをHTMLに変換して保存)
+	publishErr := p.publish(ctx, req, outcome.ReviewMarkdown)
 
-	return nil
+	// 公開フェーズのエラーハンドリング
+	if publishErr != nil {
+		if err == nil {
+			err = publishErr
+			result = domain.NewFailureResult(req, err, finalDuration)
+		} else {
+			err = errors.Join(err, publishErr)
+		}
+	}
+
+	return result, err
 }
 
-// --- プライベートメソッド ---
-
-// publishToStorage はレビュー結果をクラウドストレージにアップロードします。
-func (p *PublishRunner) publishToStorage(ctx context.Context, req domain.ReviewRequest) error {
-	meta := createReviewData(req)
-	if err := p.publisher.Publish(ctx, req.StorageURI, meta); err != nil {
-		return fmt.Errorf("ストレージへの書き込みに失敗しました (URI: %s): %w", req.StorageURI, err)
+// publish は公開処理のパイプライン全体を実行します。
+func (p *PublishRunner) publish(ctx context.Context, req domain.ReviewRequest, reviewMarkdown string) error {
+	// ReviewDataを構築
+	reviewData := ports.ReviewData{
+		RepoURL:        req.RepoURL,
+		BaseBranch:     req.BaseBranch,
+		FeatureBranch:  req.FeatureBranch,
+		ReviewMarkdown: reviewMarkdown,
 	}
-	slog.Info("クラウドストレージへのアップロードが完了しました。", "uri", req.StorageURI)
+
+	// GCSへの公開
+	storageURI := fmt.Sprintf("gs://%s/%s", req.GCSBucket, req.GCSPath)
+	publishErr := p.publisher.Publish(ctx, storageURI, reviewData)
+
+	// Early Return: 公開エラーが発生した場合、即座にエラーを返して終了
+	if publishErr != nil {
+		slog.ErrorContext(ctx, "致命的エラー: レビュー結果の公開に失敗しました", "error", publishErr)
+		return fmt.Errorf("レビュー結果の公開に失敗: %w", publishErr)
+	}
+
+	// --- 公開成功後の処理 ---
+
+	// 署名付きURLの取得。失敗しても処理は継続する（WarnログとstorageURIの利用）
+	publicURL, urlErr := p.getPublicURL(ctx, storageURI)
+	if urlErr != nil {
+		slog.Warn("公開URLの生成に失敗しました...", "error", urlErr)
+		publicURL = storageURI
+	}
+
+	// Slackへの通知
+	slog.InfoContext(ctx, "レビュー結果(またはエラーレポート)をSlackに通知中")
+	if notifyErr := p.notifier.Notify(ctx, publicURL, storageURI, req); notifyErr != nil {
+		// 通知は非致命的エラーとして警告ログを出し、処理は継続する
+		slog.WarnContext(ctx, "Slack通知に失敗しました", "error", notifyErr)
+	}
+
 	return nil
-}
-
-// notify はSlackに通知を送信します。
-func (p *PublishRunner) notify(ctx context.Context, publicURL string, req domain.ReviewRequest) {
-	if err := p.notifier.Notify(ctx, publicURL, req.StorageURI, req); err != nil {
-		slog.Error("Slack通知の実行中にエラーが発生しましたが、処理を続行します。", "error", err)
-	}
 }
 
 // getPublicURL は URI に応じて署名付きURLを生成するか、公開URLに変換します。
 func (p *PublishRunner) getPublicURL(ctx context.Context, storageURI string) (string, error) {
-	if remoteio.IsGCSURI(storageURI) {
-		if p.urlSigner == nil {
-			return "", fmt.Errorf("GCS URIが指定されましたが、URL Signerが利用不可です。")
-		}
-		signedURL, err := p.urlSigner.GenerateSignedURL(ctx, storageURI, "GET", signedURLExpiration)
-		if err != nil {
-			return "", fmt.Errorf("GCS 署名付きURLの生成に失敗しました: %w", err)
-		}
-		return signedURL, nil
+	signedURL, err := p.urlSigner.GenerateSignedURL(ctx, storageURI, "GET", config.SignedURLExpiration)
+	if err != nil {
+		return "", fmt.Errorf("GCS 署名付きURLの生成に失敗しました: %w", err)
 	}
+	// URL全体を出力せず、成功した事実のみ、あるいはマスクして出力する
+	slog.DebugContext(ctx, "GCS 署名付きURLの生成に成功", "uri_path", storageURI)
 
-	if remoteio.IsS3URI(storageURI) {
-		awsRegion := os.Getenv("AWS_REGION")
-		if awsRegion == "" {
-			awsRegion = "ap-northeast-1"
-		}
-		return convertS3URIToPublicURL(storageURI, awsRegion), nil
-	}
-
-	return storageURI, nil
-}
-
-// convertS3URIToPublicURL は S3 URI を AWS の公開 Virtual-Hosted Style アクセス URL に変換します。
-// 形式: https://{bucketName}.s3.{region}.amazonaws.com/{objectKey}
-func convertS3URIToPublicURL(s3URI, region string) string {
-	processedURI := strings.TrimPrefix(s3URI, "s3://")
-	parts := strings.SplitN(processedURI, "/", 2)
-	bucketName := parts[0]
-	objectKey := "/"
-	if len(parts) > 1 {
-		objectKey = "/" + parts[1]
-	}
-
-	// 公開URL形式に再構成 (Path-Style Access)
-	// 形式: https://s3.{region}.amazonaws.com/{bucketName}{objectKey}
-	return fmt.Sprintf("https://s3.%s.amazonaws.com/%s%s", region, bucketName, objectKey)
-}
-
-// createReviewData は設定とレビュー結果から publisher.ReviewData を生成します。
-func createReviewData(req domain.ReviewRequest) ports.ReviewData {
-	return ports.ReviewData{
-		RepoURL:        req.Config.RepoURL,
-		BaseBranch:     req.Config.BaseBranch,
-		FeatureBranch:  req.Config.FeatureBranch,
-		ReviewMarkdown: req.ReviewMarkdown,
-	}
+	return signedURL, nil
 }

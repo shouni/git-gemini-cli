@@ -9,12 +9,25 @@ import (
 const (
 	promptDir    = "prompts"
 	promptPrefix = "prompt_"
+	reportPrefix = "report_"
 )
 
-//go:embed prompts/prompt_*.md
-var PromptFiles embed.FS
+var (
+	// promptFiles はプロンプトテンプレートです。
+	//go:embed prompts/prompt_*.md
+	promptFiles embed.FS
+
+	// reportFiles はレポートテンプレートです。
+	//go:embed prompts/report_*.md
+	reportFiles embed.FS
+)
 
 // LoadPrompts は埋め込まれたプロンプトファイルを読み込みます。
 func LoadPrompts() (map[string]string, error) {
-	return resource.Load(PromptFiles, promptDir, promptPrefix)
+	return resource.Load(promptFiles, promptDir, promptPrefix)
+}
+
+// LoadReports は埋め込まれたレポートファイルを読み込みます。
+func LoadReports() (map[string]string, error) {
+	return resource.Load(reportFiles, promptDir, reportPrefix)
 }

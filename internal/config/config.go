@@ -7,7 +7,10 @@ import (
 	"github.com/shouni/go-utils/envutil"
 )
 
-const DefaultHTTPTimeout = 30 * time.Second
+const (
+	DefaultHTTPTimeout  = 30 * time.Second
+	SignedURLExpiration = 30 * time.Minute
+)
 
 // Config はAIコードレビューに必要なすべての設定を含みます。
 // この構造体は、コマンドライン引数からサービスロジックへ設定を渡すための共通のデータモデルです。
@@ -24,6 +27,9 @@ type Config struct {
 	ProjectID             string
 	GeminiAPIKey          string
 	SlackWebhookURL       string
+
+	GCSBucket string
+	GCSPath   string
 }
 
 // Normalize は設定値の文字列フィールドから前後の空白を一括で削除します。
@@ -39,6 +45,9 @@ func (c *Config) Normalize() {
 	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
 	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
 	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
+	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
+	c.GCSBucket = strings.TrimSpace(c.GCSBucket)
+	c.GCSPath = strings.TrimSpace(c.GCSPath)
 }
 
 // FillDefaults は、現在の設定で空のフィールドを envCfg の値で補完します。

@@ -1,7 +1,6 @@
 package cmd
 
 import (
-	"errors"
 	"fmt"
 	"log/slog"
 
@@ -29,33 +28,38 @@ var genericCmd = &cobra.Command{
 func genericCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	appCtx, err := builder.BuildContainer(ctx, &ReviewConfig)
+	appCtx, err := builder.BuildContainer(ctx, &opts)
 	if err != nil {
-		// コンテナの構築エラーをラップして返す
-		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
+		return fmt.Errorf("アプリケーションコンテキストの構築に失敗しました: %w", err)
 	}
 	defer func() {
-		if closeErr := appCtx.Close(); closeErr != nil {
-			slog.ErrorContext(ctx, "コンテナのクローズに失敗しました", "error", closeErr)
-		}
+		slog.Info("♻️ アプリケーションコンテキストをクローズ中...")
+		appCtx.Close()
 	}()
 
 	// 1. パイプラインを実行し、結果を受け取る
 	req := domain.ReviewRequest{
-		Config: ReviewConfig,
-	}
-	reviewResult, err := appCtx.Pipeline.Review(ctx, req)
-	if errors.Is(err, domain.ErrSkipReview) {
-		slog.Info("レビュー結果の内容が空のため、標準出力への出力はスキップしました。")
-		return nil
-	}
-	if err != nil {
-		return err
+		RepoURL:       opts.RepoURL,
+		BaseBranch:    opts.BaseBranch,
+		FeatureBranch: opts.FeatureBranch,
+		Mode:          opts.ReviewMode,
+		ModelName:     opts.GeminiModel,
 	}
 
-	// 2. レビュー結果の出力、レビュー結果の内容が空でない場合にのみ標準出力に出力する
-	printReviewResult(reviewResult)
-	slog.Info("レビュー結果を標準出力に出力しました。")
+	// ReviewPipeline.Review は中間結果の Outcome を返します
+	outcome := appCtx.Pipeline.Review(ctx, req)
+	if outcome.Error != nil {
+		return fmt.Errorf("review process failed at step %s: %w", outcome.StepName, outcome.Error)
+	}
+
+	// 2. レビュー結果の出力
+	// ReviewMarkdown が空でない場合にのみ標準出力に出力する
+	if outcome.ReviewMarkdown != "" {
+		printReviewResult(outcome.ReviewMarkdown)
+		slog.Info("レビュー結果を標準出力に出力しました。")
+	} else if outcome.IsSkipped {
+		slog.Info("差分がないため、レビュー出力はスキップされました。")
+	}
 
 	return nil
 }
