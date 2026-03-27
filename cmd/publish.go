@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/spf13/cobra"
 
 	"git-gemini-cli/internal/builder"
-	"git-gemini-cli/internal/domain"
 )
 
 // publishCmd は 'publish' サブコマンドを定義します。
@@ -46,7 +46,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}()
 
 	// 1. 最新の domain.ReviewRequest 定義に合わせてフィールドを埋める
-	req := domain.ReviewRequest{
+	req := ports.ReviewRequest{
 		RepoURL:       opts.RepoURL,
 		BaseBranch:    opts.BaseBranch,
 		FeatureBranch: opts.FeatureBranch,

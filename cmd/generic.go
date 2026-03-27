@@ -4,10 +4,10 @@ import (
 	"fmt"
 	"log/slog"
 
+	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/spf13/cobra"
 
 	"git-gemini-cli/internal/builder"
-	"git-gemini-cli/internal/domain"
 )
 
 // genericCmd は 'generic' サブコマンドを定義します。
@@ -38,7 +38,7 @@ func genericCommand(cmd *cobra.Command, args []string) error {
 	}()
 
 	// 1. パイプラインを実行し、結果を受け取る
-	req := domain.ReviewRequest{
+	req := ports.ReviewRequest{
 		RepoURL:       opts.RepoURL,
 		BaseBranch:    opts.BaseBranch,
 		FeatureBranch: opts.FeatureBranch,
