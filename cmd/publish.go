@@ -20,12 +20,9 @@ var publishCmd = &cobra.Command{
 }
 
 func init() {
-	// バケット名フラグ
 	publishCmd.Flags().StringVar(&opts.GCSBucket, "bucket", "", "保存先のGCSバケット名")
-	// オブジェクトパスフラグ
 	publishCmd.Flags().StringVar(&opts.GCSPath, "path", "", "バケット内の保存パス (例: reports/rev_01.md)")
 
-	// 必須チェック（保存先がないと PublishRunner が失敗するため）
 	publishCmd.MarkFlagRequired("bucket")
 	publishCmd.MarkFlagRequired("path")
 }
@@ -55,9 +52,8 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		FeatureBranch: opts.FeatureBranch,
 		Mode:          opts.ReviewMode,
 		ModelName:     opts.GeminiModel,
-
-		GCSBucket: opts.GCSBucket,
-		GCSPath:   opts.GCSPath,
+		GCSBucket:     opts.GCSBucket,
+		GCSPath:       opts.GCSPath,
 	}
 
 	// 2. パイプラインの実行（Execute は error を返します）

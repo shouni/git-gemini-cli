@@ -6,7 +6,6 @@ import (
 	"path/filepath"
 
 	"github.com/shouni/clibase"
-	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 
 	"git-gemini-cli/internal/config"
@@ -14,8 +13,6 @@ import (
 
 // opts は、レビュー実行のパラメータです
 var opts config.Config
-
-const baseRepoDirName = "reviewerRepos"
 
 // Execute は、clibase.Execute を使用してアプリケーションを構築・実行します。
 func Execute() {
@@ -45,12 +42,6 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 		Level: logLevel,
 	})
 	slog.SetDefault(slog.New(handler))
-
-	// RepoURLが指定されている場合のみ、LocalPathの動的生成を試みる
-	if opts.LocalPath == "" && opts.RepoURL != "" {
-		opts.LocalPath = urlpath.SanitizeURLToUniquePath(opts.RepoURL, baseRepoDirName)
-		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", opts.LocalPath)
-	}
 
 	return nil
 }
