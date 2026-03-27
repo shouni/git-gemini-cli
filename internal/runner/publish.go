@@ -85,6 +85,7 @@ func (p *PublishRunner) Run(
 			result = domain.NewFailureResult(req, err, finalDuration)
 		} else {
 			err = errors.Join(err, publishErr)
+			result = domain.NewFailureResult(req, err, finalDuration)
 		}
 	}
 
@@ -102,7 +103,7 @@ func (p *PublishRunner) publish(ctx context.Context, req domain.ReviewRequest, r
 	}
 
 	// GCSへの公開
-	storageURI := fmt.Sprintf("gs://%s/%s", req.GCSBucket, req.GCSPath)
+	storageURI := req.GCSURI()
 	publishErr := p.publisher.Publish(ctx, storageURI, reviewData)
 
 	// Early Return: 公開エラーが発生した場合、即座にエラーを返して終了
