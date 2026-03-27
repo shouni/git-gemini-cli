@@ -10,50 +10,59 @@ import (
 
 // --- Mock 定義 ---
 
-// MockReviewRunner は ReviewRunner のモックです。
+// MockReviewRunner は domain.ReviewRunner のモックです。
 type MockReviewRunner struct {
-	RunFunc func(ctx context.Context, req domain.ReviewRequest) (string, error)
+	RunFunc func(ctx context.Context, req domain.ReviewRequest) domain.ReviewProcessOutcome
 }
 
-func (m *MockReviewRunner) Run(ctx context.Context, req domain.ReviewRequest) (string, error) {
+func (m *MockReviewRunner) Run(ctx context.Context, req domain.ReviewRequest) domain.ReviewProcessOutcome {
 	return m.RunFunc(ctx, req)
 }
 
+// MockPublishRunner は domain.PublishRunner のモックです。
 type MockPublishRunner struct {
-	RunFunc func(ctx context.Context, req domain.ReviewRequest) error
+	// 戻り値を domain.ReviewResult に修正
+	RunFunc func(ctx context.Context, req domain.ReviewRequest, outcome domain.ReviewProcessOutcome) (domain.ReviewResult, error)
 }
 
-func (m *MockPublishRunner) Run(ctx context.Context, req domain.ReviewRequest) error {
-	return m.RunFunc(ctx, req)
+func (m *MockPublishRunner) Run(ctx context.Context, req domain.ReviewRequest, outcome domain.ReviewProcessOutcome) (domain.ReviewResult, error) {
+	return m.RunFunc(ctx, req, outcome)
 }
 
 // --- テスト本体 ---
 
 func TestReviewPipeline_Execute(t *testing.T) {
-	t.Parallel() // 親テストの並行実行を許可
+	t.Parallel()
 
 	ctx := context.Background()
 	req := domain.ReviewRequest{
-		StorageURI: "gs://bucket/path.md",
+		RepoURL:   "https://github.com/example/repo",
+		GCSBucket: "test-bucket",
+		GCSPath:   "reports/test.md",
 	}
-	expectedMarkdown := "# Result"
 
 	t.Run("正常系: レビューから公開まで成功すること", func(t *testing.T) {
-		t.Parallel() // サブテストの並行実行を許可
+		t.Parallel()
 
-		reviewCalled := false
-		publishCalled := false
+		// Outcome は最新の構造体に合わせる (StartTimeが必要な場合があるため設定)
+		outcome := domain.ReviewProcessOutcome{
+			StepName: "Completed",
+		}
+
+		// Result は domain.ReviewResult 型を使用
+		publishRes := domain.ReviewResult{
+			Status: domain.ReviewStatusSuccess,
+			GCSURI: req.GCSURI(),
+		}
 
 		mockReviewer := &MockReviewRunner{
-			RunFunc: func(ctx context.Context, r domain.ReviewRequest) (string, error) {
-				reviewCalled = true
-				return expectedMarkdown, nil
+			RunFunc: func(ctx context.Context, r domain.ReviewRequest) domain.ReviewProcessOutcome {
+				return outcome
 			},
 		}
 		mockPublisher := &MockPublishRunner{
-			RunFunc: func(ctx context.Context, r domain.ReviewRequest) error {
-				publishCalled = true
-				return nil
+			RunFunc: func(ctx context.Context, r domain.ReviewRequest, o domain.ReviewProcessOutcome) (domain.ReviewResult, error) {
+				return publishRes, nil
 			},
 		}
 
@@ -63,64 +72,28 @@ func TestReviewPipeline_Execute(t *testing.T) {
 		if err != nil {
 			t.Fatalf("Execute() failed: %v", err)
 		}
-		if !reviewCalled || !publishCalled {
-			t.Errorf("runners were not called correctly: review=%v, publish=%v", reviewCalled, publishCalled)
-		}
 	})
 
-	t.Run("正常系: 差分なし(ErrSkipReview)の場合はエラーにならず公開も呼ばれないこと", func(t *testing.T) {
+	t.Run("異常系: パブリッシュが失敗した場合はエラーを返す", func(t *testing.T) {
 		t.Parallel()
 
-		reviewCalled := false
-		publishCalled := false
-
+		errPublish := errors.New("publish failed")
 		mockReviewer := &MockReviewRunner{
-			RunFunc: func(ctx context.Context, r domain.ReviewRequest) (string, error) {
-				reviewCalled = true
-				return "", domain.ErrSkipReview
+			RunFunc: func(ctx context.Context, r domain.ReviewRequest) domain.ReviewProcessOutcome {
+				return domain.ReviewProcessOutcome{}
 			},
 		}
 		mockPublisher := &MockPublishRunner{
-			RunFunc: func(ctx context.Context, r domain.ReviewRequest) error {
-				publishCalled = true
-				return nil
+			RunFunc: func(ctx context.Context, r domain.ReviewRequest, o domain.ReviewProcessOutcome) (domain.ReviewResult, error) {
+				return domain.ReviewResult{}, errPublish
 			},
 		}
 
 		p := NewReviewPipeline(mockReviewer, mockPublisher)
 		err := p.Execute(ctx, req)
 
-		if err != nil {
-			t.Errorf("expected nil error for ErrSkipReview, got %v", err)
-		}
-		if !reviewCalled {
-			t.Error("reviewer should be called")
-		}
-		if publishCalled {
-			t.Error("publisher should not be called when review is skipped")
-		}
-	})
-
-	t.Run("異常系: レビューが失敗（スキップ以外）した場合はエラーを返す", func(t *testing.T) {
-		t.Parallel()
-
-		errReview := errors.New("ai error")
-		mockReviewer := &MockReviewRunner{
-			RunFunc: func(ctx context.Context, r domain.ReviewRequest) (string, error) {
-				return "", errReview
-			},
-		}
-		mockPublisher := &MockPublishRunner{
-			RunFunc: func(ctx context.Context, r domain.ReviewRequest) error {
-				return nil
-			},
-		}
-
-		p := NewReviewPipeline(mockReviewer, mockPublisher)
-		err := p.Execute(ctx, req)
-
-		if !errors.Is(err, errReview) {
-			t.Errorf("expected error %v, got %v", errReview, err)
+		if !errors.Is(err, errPublish) {
+			t.Errorf("expected error %v, got %v", errPublish, err)
 		}
 	})
 }

@@ -14,14 +14,14 @@ import (
 	"git-gemini-cli/internal/domain"
 )
 
-// SlackAdapter は、Slack APIと連携し、Webhookを介してメッセージを投稿するためのアダプタを表します。
+// SlackAdapter は SlackNotifier インターフェースを満たす具象型です。
 type SlackAdapter struct {
 	slackClient *slack.Client
 	webhookURL  string
 }
 
 // NewSlackAdapter は新しいアダプターインスタンスを作成します。
-func NewSlackAdapter(httpClient httpkit.Requester, webhookURL string) (domain.Notifier, error) {
+func NewSlackAdapter(httpClient httpkit.Requester, webhookURL string) (*SlackAdapter, error) {
 	if webhookURL == "" {
 		// オプショナル機能として扱い、空のままインスタンスを返す
 		return &SlackAdapter{}, nil
@@ -42,7 +42,8 @@ func NewSlackAdapter(httpClient httpkit.Requester, webhookURL string) (domain.No
 	}, nil
 }
 
-// Notify は Slack への通知を実行します。 publicURL をリンク先として、Slack に投稿します。
+// Notify は SlackNotifier インターフェースの実装です。
+// publicURL をリンク先として、Slack に投稿します。
 func (s *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string, req domain.ReviewRequest) error {
 	if s.webhookURL == "" || s.slackClient == nil {
 		slog.Info("Slack通知が無効化されているか、クライアントが未初期化のためスキップします。", "storage_uri", storageURI)
@@ -61,22 +62,20 @@ func (s *SlackAdapter) Notify(ctx context.Context, publicURL, storageURI string,
 }
 
 // buildSlackContent は投稿メッセージの本文を組み立てます。
+// publicURLをメッセージ内のリンク先URL、storageURIをそのリンクの表示テキストとして使用します。
 func (s *SlackAdapter) buildSlackContent(publicURL, storageURI string, req domain.ReviewRequest) string {
-	cfg := req.Config
-	repoPath := urlpath.GetRepositoryPath(cfg.RepoURL)
+	repoPath := urlpath.GetRepositoryPath(req.RepoURL)
 	content := fmt.Sprintf(
 		"*詳細URL:* <%s|%s>\n"+
 			"*リポジトリ:* `%s`\n"+
 			"*ブランチ:* `%s` ← `%s`\n"+
-			"*モード:* `%s`\n"+
-			"*モデル:* `%s`",
+			"*モード:* `%s`",
 		publicURL,
 		storageURI,
 		repoPath,
-		cfg.BaseBranch,
-		cfg.FeatureBranch,
-		cfg.ReviewMode,
-		cfg.GeminiModel,
+		req.BaseBranch,
+		req.FeatureBranch,
+		req.Mode,
 	)
 	return strings.TrimSpace(content)
 }

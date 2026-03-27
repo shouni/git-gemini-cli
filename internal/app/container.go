@@ -1,7 +1,7 @@
 package app
 
 import (
-	"errors"
+	"log/slog"
 
 	"github.com/shouni/go-http-kit/httpkit"
 	"github.com/shouni/go-remote-io/remoteio"
@@ -20,6 +20,7 @@ type Container struct {
 	// External Adapters
 	HTTPClient httpkit.Requester
 	Notifier   domain.Notifier
+	PromptGen  domain.PromptGenerator
 }
 
 // RemoteIO は外部ストレージ操作に関するコンポーネントをまとめます。
@@ -38,15 +39,11 @@ func (r *RemoteIO) Close() error {
 }
 
 // Close は、Container が保持するすべての外部接続リソースを安全に解放します。
-func (c *Container) Close() error {
-	if c == nil {
-		return nil
-	}
-	var errs error
+func (c *Container) Close() {
+	// RemoteIO のリソース解放を委譲
 	if c.RemoteIO != nil {
 		if err := c.RemoteIO.Close(); err != nil {
-			errs = errors.Join(errs, err)
+			slog.Error("failed to close RemoteIO", "error", err)
 		}
 	}
-	return errs
 }

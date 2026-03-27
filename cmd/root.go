@@ -6,16 +6,13 @@ import (
 	"path/filepath"
 
 	"github.com/shouni/clibase"
-	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 
 	"git-gemini-cli/internal/config"
 )
 
-// ReviewConfig は、レビュー実行のパラメータです
-var ReviewConfig config.Config
-
-const baseRepoDirName = "reviewerRepos"
+// opts は、レビュー実行のパラメータです
+var opts config.Config
 
 // Execute は、clibase.Execute を使用してアプリケーションを構築・実行します。
 func Execute() {
@@ -32,8 +29,8 @@ func Execute() {
 
 // initAppPreRunE は、コマンド実行前にログ設定やクライアント初期化を行います。
 func initAppPreRunE(cmd *cobra.Command, args []string) error {
-	ReviewConfig.FillDefaults(config.LoadConfig())
-	ReviewConfig.Normalize()
+	opts.FillDefaults(config.LoadConfig())
+	opts.Normalize()
 
 	// slog ハンドラの設定 (clibase.GetConfig().Verbose を参照)
 	logLevel := slog.LevelInfo
@@ -46,12 +43,6 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 	})
 	slog.SetDefault(slog.New(handler))
 
-	// RepoURLが指定されている場合のみ、LocalPathの動的生成を試みる
-	if ReviewConfig.LocalPath == "" && ReviewConfig.RepoURL != "" {
-		ReviewConfig.LocalPath = urlpath.SanitizeURLToUniquePath(ReviewConfig.RepoURL, baseRepoDirName)
-		slog.Debug("LocalPathが未指定のため、URLから動的にパスを生成しました。", "generatedPath", ReviewConfig.LocalPath)
-	}
-
 	return nil
 }
 
@@ -59,15 +50,15 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 func addAppPersistentFlags(rootCmd *cobra.Command) {
 	defaultSSHKeyPath := getDefaultSSHKeyPath()
 
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.ReviewMode, "mode", "m", "detail", "レビューモードを指定: 'release' または 'detail'")
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.RepoURL, "repo-url", "u", "", "レビュー対象の Git リポジトリの SSH URL。")
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.BaseBranch, "base-branch", "b", "main", "差分比較の基準ブランチ。")
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.FeatureBranch, "feature-branch", "f", "", "レビュー対象のフィーチャーブランチ。")
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.LocalPath, "local-path", "l", "", "リポジトリをクローンするローカルパス。")
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.GeminiModel, "gemini", "g", "gemini-2.5-flash", "使用する Gemini モデル名。")
-	rootCmd.PersistentFlags().StringVarP(&ReviewConfig.SSHKeyPath, "ssh-key-path", "k", defaultSSHKeyPath, "Git 認証に使用する SSH 秘密鍵のパス。")
-	rootCmd.PersistentFlags().BoolVar(&ReviewConfig.SkipHostKeyCheck, "skip-host-key-check", false, "SSH ホストキーの検証を無効にします。")
-	rootCmd.PersistentFlags().BoolVar(&ReviewConfig.UseExternalGitCommand, "use-external-git-command", true, "外部のローカルGitコマンドを使用してリポジトリを操作します。")
+	rootCmd.PersistentFlags().StringVarP(&opts.ReviewMode, "mode", "m", "detail", "レビューモードを指定: 'release' または 'detail'")
+	rootCmd.PersistentFlags().StringVarP(&opts.RepoURL, "repo-url", "u", "", "レビュー対象の Git リポジトリの SSH URL。")
+	rootCmd.PersistentFlags().StringVarP(&opts.BaseBranch, "base-branch", "b", "main", "差分比較の基準ブランチ。")
+	rootCmd.PersistentFlags().StringVarP(&opts.FeatureBranch, "feature-branch", "f", "", "レビュー対象のフィーチャーブランチ。")
+	rootCmd.PersistentFlags().StringVarP(&opts.LocalPath, "local-path", "l", "", "リポジトリをクローンするローカルパス。")
+	rootCmd.PersistentFlags().StringVarP(&opts.GeminiModel, "gemini", "g", "gemini-2.5-flash", "使用する Gemini モデル名。")
+	rootCmd.PersistentFlags().StringVarP(&opts.SSHKeyPath, "ssh-key-path", "k", defaultSSHKeyPath, "Git 認証に使用する SSH 秘密鍵のパス。")
+	rootCmd.PersistentFlags().BoolVar(&opts.SkipHostKeyCheck, "skip-host-key-check", false, "SSH ホストキーの検証を無効にします。")
+	rootCmd.PersistentFlags().BoolVar(&opts.UseExternalGitCommand, "use-external-git-command", true, "外部のローカルGitコマンドを使用してリポジトリを操作します。")
 
 	_ = rootCmd.MarkPersistentFlagRequired("repo-url")
 	_ = rootCmd.MarkPersistentFlagRequired("feature-branch")

@@ -36,6 +36,12 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	}
 	resources = append(resources, rio)
 
+	// 3. Prompt Adapter の構築
+	promptGen, err := adapters.NewPromptAdapter()
+	if err != nil {
+		return nil, fmt.Errorf("PromptAdapter の構築に失敗しました: %w", err)
+	}
+
 	// 4. Slack Adapter
 	slack, err := adapters.NewSlackAdapter(httpClient, cfg.SlackWebhookURL)
 	if err != nil {
@@ -46,11 +52,12 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 		Config:     cfg,
 		RemoteIO:   rio,
 		HTTPClient: httpClient,
+		PromptGen:  promptGen,
 		Notifier:   slack,
 	}
 
 	// 5. Pipeline (Core Logic)
-	reviewPipeline, err := buildPipeline(ctx, appCtx.Config, appCtx.RemoteIO, appCtx.Notifier)
+	reviewPipeline, err := buildPipeline(ctx, appCtx.Config, appCtx.RemoteIO, appCtx.Notifier, appCtx.PromptGen)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize review pipeline: %w", err)
 	}

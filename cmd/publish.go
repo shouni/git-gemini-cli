@@ -10,13 +10,6 @@ import (
 	"git-gemini-cli/internal/domain"
 )
 
-// PublishFlags は GCS/S3 への公開フラグを保持します。
-type PublishFlags struct {
-	URI string // 宛先URI (例: gs://bucket/..., s3://bucket/...)
-}
-
-var publishFlags PublishFlags
-
 // publishCmd は 'publish' サブコマンドを定義します。
 var publishCmd = &cobra.Command{
 	Use:   "publish",
@@ -27,10 +20,11 @@ var publishCmd = &cobra.Command{
 }
 
 func init() {
-	// フラグ名を汎用的なものに変更
-	publishCmd.Flags().StringVarP(&publishFlags.URI, "uri", "s", "", "保存先のURI (例: gs://bucket/result.html, s3://bucket/result.html)")
-	// URIフラグは必須にする
-	publishCmd.MarkFlagRequired("uri")
+	publishCmd.Flags().StringVar(&opts.GCSBucket, "bucket", "", "保存先のGCSバケット名")
+	publishCmd.Flags().StringVar(&opts.GCSPath, "path", "", "バケット内の保存パス (例: reports/rev_01.md)")
+
+	publishCmd.MarkFlagRequired("bucket")
+	publishCmd.MarkFlagRequired("path")
 }
 
 // --------------------------------------------------------------------------
@@ -42,27 +36,33 @@ func init() {
 func publishCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
-	appCtx, err := builder.BuildContainer(ctx, &ReviewConfig)
+	appCtx, err := builder.BuildContainer(ctx, &opts)
 	if err != nil {
-		// コンテナの構築エラーをラップして返す
-		return fmt.Errorf("コンテナの構築に失敗しました: %w", err)
+		return fmt.Errorf("アプリケーションコンテキストの構築に失敗しました: %w", err)
 	}
 	defer func() {
-		if closeErr := appCtx.Close(); closeErr != nil {
-			slog.ErrorContext(ctx, "コンテナのクローズに失敗しました", "error", closeErr)
-		}
+		slog.Info("♻️ アプリケーションコンテキストをクローズ中...")
+		appCtx.Close()
 	}()
 
+	// 1. 最新の domain.ReviewRequest 定義に合わせてフィールドを埋める
 	req := domain.ReviewRequest{
-		Config:     ReviewConfig,
-		StorageURI: publishFlags.URI,
+		RepoURL:       opts.RepoURL,
+		BaseBranch:    opts.BaseBranch,
+		FeatureBranch: opts.FeatureBranch,
+		Mode:          opts.ReviewMode,
+		ModelName:     opts.GeminiModel,
+		GCSBucket:     opts.GCSBucket,
+		GCSPath:       opts.GCSPath,
 	}
 
+	// 2. パイプラインの実行（Execute は error を返します）
 	if err := appCtx.Pipeline.Execute(ctx, req); err != nil {
 		return fmt.Errorf("レビューおよび公開パイプラインの実行に失敗しました: %w", err)
 	}
 
-	slog.Info("処理完了", "uri", req.StorageURI)
+	// 3. 完了ログを出力（req.GCSURI() メソッドを使用してフルパスを表示）
+	slog.Info("処理完了", "uri", req.GCSURI())
 
 	return nil
 }
