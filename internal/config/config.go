@@ -26,10 +26,9 @@ type Config struct {
 	UseExternalGitCommand bool
 	ProjectID             string
 	GeminiAPIKey          string
+	GCSBucket             string
+	GCSPath               string
 	SlackWebhookURL       string
-
-	GCSBucket string
-	GCSPath   string
 }
 
 // Normalize は設定値の文字列フィールドから前後の空白を一括で削除します。
