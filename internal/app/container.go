@@ -3,11 +3,11 @@ package app
 import (
 	"log/slog"
 
+	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/shouni/go-http-kit/httpkit"
 	"github.com/shouni/go-remote-io/remoteio"
 
 	"git-gemini-cli/internal/config"
-	"git-gemini-cli/internal/domain"
 )
 
 // Container はアプリケーションの依存関係（DIコンテナ）を保持します。
@@ -16,11 +16,11 @@ type Container struct {
 	// I/O and Storage
 	RemoteIO *RemoteIO
 	// Business Logic
-	Pipeline domain.Pipeline
+	Pipeline ports.Workflow
 	// External Adapters
 	HTTPClient httpkit.Requester
-	Notifier   domain.Notifier
-	PromptGen  domain.PromptGenerator
+	Notifier   ports.Notifier
+	PromptGen  ports.PromptGenerator
 }
 
 // RemoteIO は外部ストレージ操作に関するコンポーネントをまとめます。

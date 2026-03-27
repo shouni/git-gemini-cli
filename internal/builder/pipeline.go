@@ -4,14 +4,14 @@ import (
 	"context"
 	"fmt"
 
+	"github.com/shouni/gemini-reviewer-core/ports"
+	"github.com/shouni/gemini-reviewer-core/publisher"
+	"github.com/shouni/gemini-reviewer-core/runner"
+	"github.com/shouni/gemini-reviewer-core/workflow"
+
 	"git-gemini-cli/internal/adapters"
 	"git-gemini-cli/internal/app"
 	"git-gemini-cli/internal/config"
-	"git-gemini-cli/internal/domain"
-	"git-gemini-cli/internal/pipeline"
-	"git-gemini-cli/internal/runner"
-
-	"github.com/shouni/gemini-reviewer-core/publisher"
 )
 
 // buildPipeline は ReviewPipeline の新しいインスタンスを生成します。
@@ -19,9 +19,9 @@ func buildPipeline(
 	ctx context.Context,
 	cfg *config.Config,
 	rio *app.RemoteIO,
-	notifier domain.Notifier,
-	promptGen domain.PromptGenerator,
-) (domain.Pipeline, error) {
+	notifier ports.Notifier,
+	promptGen ports.PromptGenerator,
+) (ports.Workflow, error) {
 	reviewRunner, err := buildReviewRunner(ctx, cfg, promptGen)
 	if err != nil {
 		return nil, fmt.Errorf("ReviewRunnerの構築に失敗: %w", err)
@@ -32,15 +32,15 @@ func buildPipeline(
 		return nil, fmt.Errorf("PublishRunnerの構築に失敗: %w", err)
 	}
 
-	return pipeline.NewReviewPipeline(reviewRunner, publishRunner), nil
+	return workflow.NewWorkflow(reviewRunner, publishRunner), nil
 }
 
 // buildReviewRunner は、実行可能な ReviewRunner のインターフェースを返します。
 func buildReviewRunner(
 	ctx context.Context,
 	cfg *config.Config,
-	promptGen domain.PromptGenerator,
-) (domain.ReviewRunner, error) {
+	promptGen ports.PromptGenerator,
+) (ports.ReviewRunner, error) {
 	// 1. Git Factory の構築
 	gitFactory := NewGitFactory(cfg)
 
@@ -64,9 +64,9 @@ func buildReviewRunner(
 func buildPublishRunner(
 	ctx context.Context,
 	rio *app.RemoteIO,
-	notifier domain.Notifier,
-	promptGen domain.PromptGenerator,
-) (domain.PublishRunner, error) {
+	notifier ports.Notifier,
+	promptGen ports.PromptGenerator,
+) (ports.PublishRunner, error) {
 	if rio == nil {
 		return nil, fmt.Errorf("RemoteIO が設定されていません")
 	}
@@ -81,10 +81,10 @@ func buildPublishRunner(
 	}
 
 	publishRunner := runner.NewPublishRunner(
-		publisherService,
-		rio.Signer,
-		notifier,
 		promptGen,
+		publisherService,
+		notifier,
+		rio.Signer,
 	)
 
 	return publishRunner, nil
