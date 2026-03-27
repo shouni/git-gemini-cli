@@ -45,7 +45,6 @@ func (c *Config) Normalize() {
 	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
 	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
 	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
-	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
 	c.GCSBucket = strings.TrimSpace(c.GCSBucket)
 	c.GCSPath = strings.TrimSpace(c.GCSPath)
 }
