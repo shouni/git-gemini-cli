@@ -1,4 +1,4 @@
-package builder
+package adapters
 
 import (
 	"log/slog"
@@ -19,8 +19,9 @@ type GitFactory struct {
 
 func NewGitFactory(cfg *config.Config) *GitFactory {
 	return &GitFactory{
-		sshKeyPath:       cfg.SSHKeyPath,
-		skipHostKeyCheck: cfg.SkipHostKeyCheck,
+		sshKeyPath:            cfg.SSHKeyPath,
+		skipHostKeyCheck:      cfg.SkipHostKeyCheck,
+		UseExternalGitCommand: cfg.UseExternalGitCommand,
 	}
 }
 
@@ -33,11 +34,11 @@ func (g *GitFactory) Create(repoURL, baseBranch string) ports.GitService {
 	}
 
 	if g.UseExternalGitCommand {
-		slog.Debug("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
+		slog.Info("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
 		return git.NewGitLocalAdapter(localPath, g.sshKeyPath, opts...)
 	}
 
-	slog.Debug("GitService: コアライブラリのアダプタ (go-git) を使用します。")
+	slog.Info("GitService: コアライブラリのアダプタ (go-git) を使用します。")
 	return git.NewGitAdapter(localPath, g.sshKeyPath, opts...)
 }
 

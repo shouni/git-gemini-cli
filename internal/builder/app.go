@@ -5,12 +5,11 @@ import (
 	"fmt"
 	"io"
 
-	"github.com/shouni/go-http-kit/httpkit"
-	"github.com/shouni/go-remote-io/remoteio/gcs"
-
 	"git-gemini-cli/internal/adapters"
 	"git-gemini-cli/internal/app"
 	"git-gemini-cli/internal/config"
+
+	"github.com/shouni/go-http-kit/httpkit"
 )
 
 // BuildContainer は外部サービスとの接続を確立し、依存関係を組み立てた app.Container を返します。
@@ -49,40 +48,18 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	}
 
 	appCtx := &app.Container{
-		Config:     cfg,
-		RemoteIO:   rio,
-		HTTPClient: httpClient,
-		PromptGen:  promptGen,
-		Notifier:   slack,
+		Config:    cfg,
+		RemoteIO:  rio,
+		PromptGen: promptGen,
+		Notifier:  slack,
 	}
 
 	// 5. Pipeline (Core Logic)
-	reviewPipeline, err := buildPipeline(ctx, appCtx.Config, appCtx.RemoteIO, appCtx.Notifier, appCtx.PromptGen)
+	pipeline, err := buildPipeline(ctx, appCtx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to initialize review pipeline: %w", err)
 	}
-	appCtx.Pipeline = reviewPipeline
+	appCtx.Pipeline = pipeline
 
 	return appCtx, nil
-}
-
-// buildRemoteIO は、 I/O コンポーネントを初期化します。
-func buildRemoteIO(ctx context.Context) (*app.RemoteIO, error) {
-	factory, err := gcs.New(ctx)
-	if err != nil {
-		return nil, fmt.Errorf("failed to create GCS factory: %w", err)
-	}
-	w, err := factory.OutputWriter()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create output writer: %w", err)
-	}
-	s, err := factory.URLSigner()
-	if err != nil {
-		return nil, fmt.Errorf("failed to create URL signer: %w", err)
-	}
-	return &app.RemoteIO{
-		Factory: factory,
-		Writer:  w,
-		Signer:  s,
-	}, nil
 }
