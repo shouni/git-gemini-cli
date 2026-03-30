@@ -3,19 +3,15 @@ package builder
 import (
 	"context"
 	"fmt"
-	"git-gemini-cli/internal/app"
 
-	"github.com/shouni/go-remote-io/remoteio"
 	"github.com/shouni/go-remote-io/remoteio/gcs"
+
+	"git-gemini-cli/internal/app"
 )
 
-func storage(ctx context.Context) (remoteio.IOFactory, error) {
-	return gcs.New(ctx)
-}
-
-// buildRemoteIO は、 I/O コンポーネントを初期化します。
+// buildRemoteIO は、I/O コンポーネントを初期化します。
 func buildRemoteIO(ctx context.Context) (*app.RemoteIO, error) {
-	factory, err := storage(ctx)
+	factory, err := gcs.New(ctx)
 	if err != nil {
 		return nil, fmt.Errorf("failed to create GCS factory: %w", err)
 	}
