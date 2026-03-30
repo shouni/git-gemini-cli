@@ -60,6 +60,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	publicURL, err := appCtx.RemoteIO.Signer.GenerateSignedURL(ctx, storageURI, "GET", config.SignedURLExpiration)
 	if err != nil {
 		slog.ErrorContext(ctx, "署名付きURLの生成失敗", "error", err)
+		return fmt.Errorf("署名付きURLの生成に失敗しました: %w", err)
 	}
 
 	// 1. 最新の domain.ReviewRequest 定義に合わせてフィールドを埋める
