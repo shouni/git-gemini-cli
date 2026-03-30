@@ -3,11 +3,15 @@ package cmd
 import (
 	"fmt"
 	"log/slog"
+	"strings"
+	"time"
 
 	"github.com/shouni/gemini-reviewer-core/ports"
+	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 
 	"git-gemini-cli/internal/builder"
+	"git-gemini-cli/internal/config"
 )
 
 // publishCmd は 'publish' サブコマンドを定義します。
@@ -21,10 +25,7 @@ var publishCmd = &cobra.Command{
 
 func init() {
 	publishCmd.Flags().StringVar(&opts.GCSBucket, "bucket", "", "保存先のGCSバケット名")
-	publishCmd.Flags().StringVar(&opts.GCSPath, "path", "", "バケット内の保存パス (例: reports/rev_01.md)")
-
 	publishCmd.MarkFlagRequired("bucket")
-	publishCmd.MarkFlagRequired("path")
 }
 
 // --------------------------------------------------------------------------
@@ -45,6 +46,22 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		appCtx.Close()
 	}()
 
+	// 保存先 URI の決定 (gs://bucket/path 形式)
+	now := time.Now().Format("20060102_150405")
+	repoID := urlpath.GenerateGCSKeyName(opts.RepoURL)
+	safeBranchName := strings.ReplaceAll(opts.FeatureBranch, "/", "-")
+	storageURI := fmt.Sprintf("gs://%s/reviews/%s/%s_%s.html",
+		opts.GCSBucket,
+		repoID,
+		now,
+		safeBranchName,
+	)
+
+	publicURL, err := appCtx.RemoteIO.Signer.GenerateSignedURL(ctx, storageURI, "GET", config.SignedURLExpiration)
+	if err != nil {
+		slog.ErrorContext(ctx, "署名付きURLの生成失敗", "error", err)
+	}
+
 	// 1. 最新の domain.ReviewRequest 定義に合わせてフィールドを埋める
 	req := ports.ReviewRequest{
 		RepoURL:       opts.RepoURL,
@@ -52,8 +69,8 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		FeatureBranch: opts.FeatureBranch,
 		Mode:          opts.ReviewMode,
 		ModelName:     opts.GeminiModel,
-		GCSBucket:     opts.GCSBucket,
-		GCSPath:       opts.GCSPath,
+		StorageURI:    storageURI,
+		PublicURL:     publicURL,
 	}
 
 	// 2. パイプラインの実行（Execute は error を返します）
@@ -62,7 +79,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 	}
 
 	// 3. 完了ログを出力（req.GCSURI() メソッドを使用してフルパスを表示）
-	slog.Info("処理完了", "uri", req.GCSURI())
+	slog.Info("処理完了", "uri", req.StorageURI)
 
 	return nil
 }
