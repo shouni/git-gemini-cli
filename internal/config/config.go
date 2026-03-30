@@ -8,7 +8,8 @@ import (
 )
 
 const (
-	DefaultHTTPTimeout = 30 * time.Second
+	DefaultHTTPTimeout  = 30 * time.Second
+	SignedURLExpiration = 30 * time.Minute
 )
 
 // Config はAIコードレビューに必要なすべての設定を含みます。
@@ -26,7 +27,6 @@ type Config struct {
 	ProjectID             string
 	GeminiAPIKey          string
 	GCSBucket             string
-	GCSPath               string
 	SlackWebhookURL       string
 }
 
@@ -44,7 +44,6 @@ func (c *Config) Normalize() {
 	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)
 	c.SlackWebhookURL = strings.TrimSpace(c.SlackWebhookURL)
 	c.GCSBucket = strings.TrimSpace(c.GCSBucket)
-	c.GCSPath = strings.TrimSpace(c.GCSPath)
 }
 
 // FillDefaults は、現在の設定で空のフィールドを envCfg の値で補完します。

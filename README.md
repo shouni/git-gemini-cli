@@ -133,8 +133,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
   --repo-url "git@github.com:user/my-awesome-project.git" \
   --base-branch "main" \
   --feature-branch "feature/publish" \
-  --bucket "my-awesome-bucket" \
-  --path "reports/latest.html"
+  --bucket "my-awesome-bucket"
 ```
 
 #### 固有フラグ (クラウド連携)
@@ -142,7 +141,6 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | フラグ | ショートカット | 説明 | 必須 | デフォルト値 |
 | :--- | :--- | :--- | :--- | :--- |
 | `--bucket` | なし | 保存先の GCS バケット名 | ✅ | **なし** |
-| `--path` | なし | バケット内のオブジェクトパス (例: `reports/latest.html`) | ✅ | **なし** |
 
 ---
 
