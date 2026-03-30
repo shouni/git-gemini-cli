@@ -7,17 +7,7 @@
 
 ## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
 
-**Git Gemini CLI** は、AIコードレビューの**コアロジック**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
-
----
-
-## 🛡️ 堅牢な Git 運用 (Robust Git Operations)
-
-本ツールは CI/CD パイプラインでの自動実行を想定し、以下の Git 操作ロジックを搭載しています。
-
-* **柔軟な参照解決:** ブランチ名（`develop`）だけでなく、特定の**コミットハッシュ**（`f921111` 等）を直接指定してレビューすることが可能です。
-* **安全な解決優先順位:** 数字のみのブランチ名（チケット番号等）を使用している場合でも、ハッシュ値より先にリモートブランチを探索するため、意図しない Detached HEAD 状態を防ぎます。
-* **強制クリーンアップ:** 実行のたびに `git checkout -f` および `git clean -f -d` を実行。以前の実行で残った未コミットのファイルやコンフリクトを強制的に排除し、常にクリーンな状態でレビューを開始します。（※注意: `--local-path` に既存の作業ディレクトリを指定する場合、未コミットの変更が失われるためご注意ください）
+**Git Gemini CLI** は、AIコードレビューの**コアエンジン**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
 
 ---
 
@@ -31,74 +21,11 @@
 
 ---
 
-## 🏗 システムアーキテクチャ (System Architecture)
+## 🔄 実行ワークフロー (Execution Workflow)
 
-### レイヤー構成の境界
-
-* **Application 層 (`internal/pipeline`, `runner`):** ビジネスロジックの心臓部。ポートを介して外部サービスをオーケストレートし、具体的なユースケースを実現します。
-* **Infrastructure 層 (`internal/adapters`, `pkg/cloud`, etc.):** 外部世界（Git, AI API, Cloud Storage, Slack）との境界。各ポートに対する具象実装を担います。
-
----
-
-## 🔄 処理概要
-
-1. **初期化:** `main.go` から `internal/app/container` を介して DI コンテナを構築。
-2. **実行:** `internal/pipeline` がオーケストレーターとして各ランナーを順次実行。
-3. **レビュー:** `internal/adapters` (Git) を用いた差分取得と、[`go-gemini-client`](https://github.com/shouni/go-gemini-client) を経由した Gemini API によるコード分析を実施。
-4. **変換/公開:** [`go-prompt-kit`](https://github.com/shouni/go-prompt-kit) で Markdown を HTML へ変換し、[`go-remote-io`](https://github.com/shouni/go-remote-io)を通じてクラウドストレージへアップロード。
-5. **通知:** [`go-notifier`](https://github.com/shouni/go-notifier) を経由し、HTML 公開 URL を Slack 等へ通知。
-
----
-
-### シーケンス
-
-```mermaid
-sequenceDiagram
-    autonumber
-    participant Main as main.go
-    participant Cont as internal/app/container
-    participant Pipe as internal/pipeline
-    participant ReviewR as internal/runner/review
-    participant Git as internal/adapters/git
-    participant AI as internal/adapters/ai
-    participant PublishR as internal/runner/publish
-    participant Pub as pkg/core/publisher
-    participant Slack as internal/adapters/slack
-
-    Note over Main, Cont: 1. DIコンテナ構築
-    Main->>Cont: NewContainer(Config)
-    Cont->>Cont: BuildAdapters()
-    Cont-->>Main: Container (依存解決済み)
-
-    Note over Main, Pipe: 2. パイプライン実行 (Execute)
-    Main->>Pipe: Execute(ctx, req)
-
-    Note over Pipe, ReviewR: 3. レビューフェーズ (Review)
-    Pipe->>ReviewR: Run(ctx, req)
-    activate ReviewR
-    ReviewR->>Git: CloneOrUpdate()
-    ReviewR->>Git: Fetch()
-    ReviewR->>Git: GetCodeDiff()
-    ReviewR->>AI: ReviewCodeDiff(Prompt)
-    activate AI
-    AI->>AI: Call Gemini API
-    AI-->>ReviewR: Result (Markdown)
-    deactivate AI
-    ReviewR-->>Git: Cleanup()
-    ReviewR-->>Pipe: ReviewResult
-    deactivate ReviewR
-
-    Note over Pipe, Slack: 4. 公開・通知フェーズ (Publish)
-    Pipe->>PublishR: Run(ctx, req)
-    activate PublishR
-    PublishR->>Pub: Publish(ctx, req.StorageURI, meta)
-    Pub->>Pub: Convert to HTML (md)
-    Pub->>Pub: Upload to Cloud (remoteio)
-    Pub-->>PublishR: Public URL
-    PublishR->>Slack: Notify(publicURL, req)
-    deactivate PublishR
-    Pipe-->>Main: 完了
-```
+* **分析フェーズ**: 指定されたブランチ間の差分（Diff）を取得し、`gemini-reviewer-core` を用いて AI によるコードレビューを実施します。
+* **出力フェーズ**: レビュー結果（Markdown）を HTML に変換し、指定されたストレージ（ローカルまたは GCS）へ保存します。
+* **通知フェーズ**: 公開準備が整い次第、Slack 等の外部サービスへレビュー完了レポートを即座に通知します。
 
 ---
 

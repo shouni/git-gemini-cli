@@ -8,8 +8,7 @@ import (
 )
 
 const (
-	DefaultHTTPTimeout  = 30 * time.Second
-	SignedURLExpiration = 30 * time.Minute
+	DefaultHTTPTimeout = 30 * time.Second
 )
 
 // Config はAIコードレビューに必要なすべての設定を含みます。
