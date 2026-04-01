@@ -7,6 +7,7 @@ import (
 	"time"
 
 	"github.com/shouni/gemini-reviewer-core/ports"
+	"github.com/shouni/go-remote-io/remoteio"
 	"github.com/shouni/go-utils/urlpath"
 	"github.com/spf13/cobra"
 
@@ -46,17 +47,12 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		appCtx.Close()
 	}()
 
-	// 保存先 URI の決定 (gs://bucket/path 形式)
+	// 保存先 URI の決定
 	now := time.Now().Format("20060102_150405")
 	repoID := urlpath.GenerateGCSKeyName(opts.RepoURL)
 	safeBranchName := strings.ReplaceAll(opts.FeatureBranch, "/", "-")
-	storageURI := fmt.Sprintf("gs://%s/reviews/%s/%s_%s.html",
-		opts.GCSBucket,
-		repoID,
-		now,
-		safeBranchName,
-	)
-
+	path := fmt.Sprintf("reviews/%s/%s_%s.html", repoID, now, safeBranchName)
+	storageURI := remoteio.BuildGCSURI(opts.GCSBucket, path)
 	publicURL, err := appCtx.RemoteIO.Signer.GenerateSignedURL(ctx, storageURI, "GET", config.SignedURLExpiration)
 	if err != nil {
 		slog.ErrorContext(ctx, "署名付きURLの生成失敗", "error", err)
