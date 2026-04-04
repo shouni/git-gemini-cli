@@ -17,6 +17,10 @@ type GitFactory struct {
 	UseExternalGitCommand bool
 }
 
+// コンパイル時に ports.GitFactory インターフェースの実装を保証します
+var _ ports.GitFactory = (*GitFactory)(nil)
+
+// NewGitFactory は、GitFactory の新しいインスタンスを生成します。
 func NewGitFactory(cfg *config.Config) *GitFactory {
 	return &GitFactory{
 		sshKeyPath:            cfg.SSHKeyPath,
