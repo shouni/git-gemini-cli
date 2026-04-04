@@ -4,10 +4,10 @@ go 1.26
 
 require (
 	github.com/shouni/clibase v1.0.3
-	github.com/shouni/gemini-reviewer-core v1.7.8
+	github.com/shouni/gemini-reviewer-core v1.7.9
 	github.com/shouni/go-http-kit v1.4.0
 	github.com/shouni/go-notifier v1.2.1
-	github.com/shouni/go-prompt-kit v1.0.3
+	github.com/shouni/go-prompt-kit v1.0.4
 	github.com/shouni/go-remote-io v1.3.2
 	github.com/shouni/go-utils v1.0.20
 	github.com/spf13/cobra v1.10.2
@@ -76,7 +76,7 @@ require (
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
-	github.com/yuin/goldmark v1.7.17 // indirect
+	github.com/yuin/goldmark v1.8.2 // indirect
 	go.opentelemetry.io/auto/sdk v1.2.1 // indirect
 	go.opentelemetry.io/contrib/detectors/gcp v1.39.0 // indirect
 	go.opentelemetry.io/contrib/instrumentation/google.golang.org/grpc/otelgrpc v0.63.0 // indirect
