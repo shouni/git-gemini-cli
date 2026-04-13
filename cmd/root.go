@@ -58,7 +58,7 @@ func addAppPersistentFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVarP(&opts.GeminiModel, "gemini", "g", "gemini-2.5-flash", "使用する Gemini モデル名。")
 	rootCmd.PersistentFlags().StringVarP(&opts.SSHKeyPath, "ssh-key-path", "k", defaultSSHKeyPath, "Git 認証に使用する SSH 秘密鍵のパス。")
 	rootCmd.PersistentFlags().BoolVar(&opts.SkipHostKeyCheck, "skip-host-key-check", false, "SSH ホストキーの検証を無効にします。")
-	rootCmd.PersistentFlags().BoolVar(&opts.UseExternalGitCommand, "use-external-git-command", true, "外部のローカルGitコマンドを使用してリポジトリを操作します。")
+	rootCmd.PersistentFlags().BoolVar(&opts.UseExternalGit, "use-external-git", true, "外部のローカルGitコマンドを使用してリポジトリを操作します。")
 
 	_ = rootCmd.MarkPersistentFlagRequired("repo-url")
 	_ = rootCmd.MarkPersistentFlagRequired("feature-branch")
