@@ -21,7 +21,7 @@ func Execute() {
 		AddFlags: addAppPersistentFlags,
 		PreRunE:  initAppPreRunE,
 		Commands: []*cobra.Command{
-			genericCmd,
+			reviewCmd,
 			publishCmd,
 		},
 	})
@@ -32,7 +32,6 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 	opts.FillDefaults(config.LoadConfig())
 	opts.Normalize()
 
-	// slog ハンドラの設定 (clibase.GetConfig().Verbose を参照)
 	logLevel := slog.LevelInfo
 	if clibase.GetConfig().Verbose {
 		logLevel = slog.LevelDebug
@@ -42,7 +41,6 @@ func initAppPreRunE(cmd *cobra.Command, args []string) error {
 		Level: logLevel,
 	})
 	slog.SetDefault(slog.New(handler))
-
 	return nil
 }
 

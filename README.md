@@ -84,7 +84,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ### 🛠 共通フラグ (Persistent Flags)
 
-すべてのサブコマンド (`generic`, `publish`) で使用可能なフラグです。
+すべてのサブコマンド (`review`, `publish`) で使用可能なフラグです。
 
 | フラグ | ショートカット | 説明 | デフォルト値 | 必須 |
 | :--- | :--- | :--- | :--- | :--- |
@@ -99,7 +99,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ---
 
-### 1\. 標準出力モード (`generic`)
+### 1\. 標準出力モード (`review`)
 
 リモートリポジトリのブランチ差分を取得し、レビュー結果を**標準出力**に出力します。
 
@@ -107,7 +107,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ```bash
 # main と develop の差分をリリース判定モードで実行
-./bin/git_gemini_cli generic \
+./bin/git_gemini_cli review \
   -m "release" \
   --repo-url "git@github.com:user/my-awesome-project.git" \
   --base-branch "main" \

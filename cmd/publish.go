@@ -59,7 +59,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 		return fmt.Errorf("署名付きURLの生成に失敗しました: %w", err)
 	}
 
-	// 1. 最新の domain.ReviewRequest 定義に合わせてフィールドを埋める
+	// 1. domain.ReviewRequest 定義に合わせてフィールドを埋める
 	req := ports.ReviewRequest{
 		RepoURL:       opts.RepoURL,
 		BaseBranch:    opts.BaseBranch,
