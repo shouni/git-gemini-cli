@@ -33,8 +33,9 @@ func NewGitFactory(cfg *config.Config) *GitFactory {
 
 // Create は ports.GitFactory インターフェースを満たします。
 func (g *GitFactory) Create(repoURL, baseBranch string) ports.GitService {
-	if g.localPath != "" {
-		g.localPath = g.generateLocalPath(repoURL)
+	localPath := g.localPath
+	if localPath == "" {
+		localPath = g.generateLocalPath(repoURL)
 	}
 	opts := []git.Option{
 		git.WithInsecureSkipHostKeyCheck(g.skipHostKeyCheck),
@@ -43,11 +44,11 @@ func (g *GitFactory) Create(repoURL, baseBranch string) ports.GitService {
 
 	if g.useExternalGit {
 		slog.Info("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
-		return git.NewGitLocalAdapter(g.localPath, g.sshKeyPath, opts...)
+		return git.NewGitLocalAdapter(localPath, g.sshKeyPath, opts...)
 	}
 
 	slog.Info("GitService: コアライブラリのアダプタ (go-git) を使用します。")
-	return git.NewGitAdapter(g.localPath, g.sshKeyPath, opts...)
+	return git.NewGitAdapter(localPath, g.sshKeyPath, opts...)
 }
 
 // generateLocalPath はリポジトリURLからユニークなローカルパスを生成します。
