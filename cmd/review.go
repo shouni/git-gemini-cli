@@ -10,22 +10,22 @@ import (
 	"git-gemini-cli/internal/builder"
 )
 
-// genericCmd は 'generic' サブコマンドを定義します。
-var genericCmd = &cobra.Command{
-	Use:   "generic",
+// reviewCmd は 'review' サブコマンドを定義します。
+var reviewCmd = &cobra.Command{
+	Use:   "review",
 	Short: "コードレビューを実行し、その結果を標準出力に出力します。",
 	Long:  `このコマンドは、指定されたGitリポジトリのブランチ間の差分をAIでレビューし、その結果を標準出力に直接表示します。外部サービスとの連携は行いません。`,
 	Args:  cobra.NoArgs,
-	RunE:  genericCommand,
+	RunE:  reviewCommand,
 }
 
 // --------------------------------------------------------------------------
 // コマンドの実行ロジック
 // --------------------------------------------------------------------------
 
-// genericCommand は、リモートリポジトリのブランチ比較を Gemini AI に依頼し、
+// reviewCommand は、リモートリポジトリのブランチ比較を Gemini AI に依頼し、
 // 結果を標準出力に出力する generic コマンドの実行ロジックです。
-func genericCommand(cmd *cobra.Command, args []string) error {
+func reviewCommand(cmd *cobra.Command, args []string) error {
 	ctx := cmd.Context()
 
 	appCtx, err := builder.BuildContainer(ctx, &opts)
@@ -37,7 +37,7 @@ func genericCommand(cmd *cobra.Command, args []string) error {
 		appCtx.Close()
 	}()
 
-	// 1. パイプラインを実行し、結果を受け取る
+	// 1. domain.ReviewRequest 定義に合わせてフィールドを埋める
 	req := ports.ReviewRequest{
 		RepoURL:       opts.RepoURL,
 		BaseBranch:    opts.BaseBranch,
