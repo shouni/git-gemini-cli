@@ -14,7 +14,6 @@ import (
 type GitFactory struct {
 	sshKeyPath       string
 	skipHostKeyCheck bool
-	localPath        string
 	useExternalGit   bool
 }
 
@@ -26,17 +25,13 @@ func NewGitFactory(cfg *config.Config) *GitFactory {
 	return &GitFactory{
 		sshKeyPath:       cfg.SSHKeyPath,
 		skipHostKeyCheck: cfg.SkipHostKeyCheck,
-		localPath:        cfg.LocalPath,
 		useExternalGit:   cfg.UseExternalGit,
 	}
 }
 
 // Create は ports.GitFactory インターフェースを満たします。
 func (g *GitFactory) Create(repoURL, baseBranch string) ports.GitService {
-	localPath := g.localPath
-	if localPath == "" {
-		localPath = g.generateLocalPath(repoURL)
-	}
+	localPath := g.generateLocalPath(repoURL)
 	opts := []git.Option{
 		git.WithInsecureSkipHostKeyCheck(g.skipHostKeyCheck),
 		git.WithBaseBranch(baseBranch),

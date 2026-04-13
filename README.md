@@ -92,7 +92,6 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | `--repo-url` | **`-u`** | レビュー対象の Git リポジトリの **SSH URL** | **なし** | ✅ |
 | `--base-branch` | **`-b`** | 基準となる**ブランチ名またはハッシュ** | `main` | ❌ |
 | `--feature-branch` | **`-f`** | レビュー対象の**ブランチ名またはハッシュ** | **なし** | ✅ |
-| `--local-path` | **`-l`** | リポジトリをクローンするローカルパス | 一時ディレクトリ | ❌ |
 | `--gemini` | **`-g`** | 使用する Gemini モデル名 (例: `gemini-2.5-flash`) | `gemini-2.5-flash` | ❌ |
 | `--ssh-key-path` | **`-k`** | Git 認証用の SSH 秘密鍵のパス。**チルダ (`~`) 展開をサポート**しています。**CI/CD環境ではシークレットマウント先の絶対パス**を指定してください。 | `~/.ssh/id_rsa` | ❌ |
 | `--skip-host-key-check` | なし | SSHホストキーチェックをスキップする（**🚨非推奨/危険な設定**）。**`known_hosts`を使用しない**場合に設定します。 | `false` | ❌ |

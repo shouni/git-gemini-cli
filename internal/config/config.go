@@ -21,7 +21,6 @@ type Config struct {
 	BaseBranch       string
 	FeatureBranch    string
 	SSHKeyPath       string
-	LocalPath        string
 	SkipHostKeyCheck bool
 	UseExternalGit   bool
 	ProjectID        string
@@ -38,7 +37,6 @@ func (c *Config) Normalize() {
 	c.RepoURL = strings.TrimSpace(c.RepoURL)
 	c.BaseBranch = strings.TrimSpace(c.BaseBranch)
 	c.FeatureBranch = strings.TrimSpace(c.FeatureBranch)
-	c.LocalPath = strings.TrimSpace(c.LocalPath)
 	c.ReviewMode = strings.TrimSpace(c.ReviewMode)
 	c.GeminiModel = strings.TrimSpace(c.GeminiModel)
 	c.SSHKeyPath = strings.TrimSpace(c.SSHKeyPath)

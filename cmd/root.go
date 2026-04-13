@@ -54,7 +54,6 @@ func addAppPersistentFlags(rootCmd *cobra.Command) {
 	rootCmd.PersistentFlags().StringVarP(&opts.RepoURL, "repo-url", "u", "", "レビュー対象の Git リポジトリの SSH URL。")
 	rootCmd.PersistentFlags().StringVarP(&opts.BaseBranch, "base-branch", "b", "main", "差分比較の基準ブランチ。")
 	rootCmd.PersistentFlags().StringVarP(&opts.FeatureBranch, "feature-branch", "f", "", "レビュー対象のフィーチャーブランチ。")
-	rootCmd.PersistentFlags().StringVarP(&opts.LocalPath, "local-path", "l", "", "リポジトリをクローンするローカルパス。")
 	rootCmd.PersistentFlags().StringVarP(&opts.GeminiModel, "gemini", "g", "gemini-2.5-flash", "使用する Gemini モデル名。")
 	rootCmd.PersistentFlags().StringVarP(&opts.SSHKeyPath, "ssh-key-path", "k", defaultSSHKeyPath, "Git 認証に使用する SSH 秘密鍵のパス。")
 	rootCmd.PersistentFlags().BoolVar(&opts.SkipHostKeyCheck, "skip-host-key-check", false, "SSH ホストキーの検証を無効にします。")
