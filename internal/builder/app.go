@@ -33,12 +33,12 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	// 2. I/O Infrastructure (マルチクラウクラウド対応)
 	storage, err := gcs.New(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to create S3 factory: %w", err)
+		return nil, fmt.Errorf("GCSストレージの生成に失敗しました: %w", err)
 	}
 	resources = append(resources, storage)
 	rio, err := buildRemoteIO(storage)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize IO components: %w", err)
+		return nil, fmt.Errorf("I/Oコンポーネントの初期化に失敗しました: %w", err)
 	}
 
 	// 3. Prompt Adapter の構築
@@ -63,7 +63,7 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	// 5. Pipeline (Core Logic)
 	pipeline, err := buildPipeline(ctx, appCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize review pipeline: %w", err)
+		return nil, fmt.Errorf("パイプラインの初期化に失敗しました: %w", err)
 	}
 	appCtx.Pipeline = pipeline
 
