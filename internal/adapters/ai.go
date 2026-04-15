@@ -4,14 +4,13 @@ import (
 	"context"
 	"fmt"
 
-	"github.com/shouni/gemini-reviewer-core/ai"
-	"github.com/shouni/gemini-reviewer-core/ports"
-
 	"git-gemini-cli/internal/config"
+
+	"github.com/shouni/gemini-reviewer-core/ai"
 )
 
 // NewCodeReviewAI は adapters.CodeReviewAI のインスタンスを構築します。
-func NewCodeReviewAI(ctx context.Context, cfg *config.Config) (ports.CodeReviewAI, error) {
+func NewCodeReviewAI(ctx context.Context, cfg *config.Config) (*ai.GeminiAdapter, error) {
 	opt := ai.GeminiOptions{
 		ProjectID: cfg.ProjectID,
 		APIKey:    cfg.GeminiAPIKey,
