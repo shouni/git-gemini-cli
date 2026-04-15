@@ -10,6 +10,8 @@ import (
 	"git-gemini-cli/internal/config"
 
 	"github.com/shouni/go-http-kit/httpkit"
+	"github.com/shouni/go-remote-io/remoteio"
+	"github.com/shouni/go-remote-io/remoteio/gcs"
 )
 
 // BuildContainer は外部サービスとの接続を確立し、依存関係を組み立てた app.Container を返します。
@@ -29,11 +31,15 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	httpClient := httpkit.New(config.DefaultHTTPTimeout)
 
 	// 2. I/O Infrastructure (マルチクラウクラウド対応)
-	rio, err := buildRemoteIO(ctx)
+	storage, err := gcs.New(ctx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize IO components: %w", err)
+		return nil, fmt.Errorf("GCSストレージの生成に失敗しました: %w", err)
 	}
-	resources = append(resources, rio)
+	resources = append(resources, storage)
+	rio, err := buildRemoteIO(storage)
+	if err != nil {
+		return nil, fmt.Errorf("I/Oコンポーネントの初期化に失敗しました: %w", err)
+	}
 
 	// 3. Prompt Adapter の構築
 	promptGen, err := adapters.NewPromptAdapter()
@@ -44,7 +50,7 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	// 4. Slack Adapter
 	slack, err := adapters.NewSlackAdapter(httpClient, cfg.SlackWebhookURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize Slack adapter: %w", err)
+		return nil, fmt.Errorf("SlackAdapter の構築に失敗しました: %w", err)
 	}
 
 	appCtx := &app.Container{
@@ -57,9 +63,26 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	// 5. Pipeline (Core Logic)
 	pipeline, err := buildPipeline(ctx, appCtx)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize review pipeline: %w", err)
+		return nil, fmt.Errorf("パイプラインの初期化に失敗しました: %w", err)
 	}
 	appCtx.Pipeline = pipeline
 
 	return appCtx, nil
+}
+
+// buildRemoteIO は、 I/O コンポーネントを初期化します。
+func buildRemoteIO(storage remoteio.IOFactory) (*app.RemoteIO, error) {
+	w, err := storage.OutputWriter()
+	if err != nil {
+		return nil, fmt.Errorf("出力ライターの生成に失敗しました: %w", err)
+	}
+	s, err := storage.URLSigner()
+	if err != nil {
+		return nil, fmt.Errorf("URL署名器の生成に失敗しました: %w", err)
+	}
+	return &app.RemoteIO{
+		Factory: storage,
+		Writer:  w,
+		Signer:  s,
+	}, nil
 }
