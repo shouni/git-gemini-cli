@@ -50,7 +50,7 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 	// 4. Slack Adapter
 	slack, err := adapters.NewSlackAdapter(httpClient, cfg.SlackWebhookURL)
 	if err != nil {
-		return nil, fmt.Errorf("failed to initialize Slack adapter: %w", err)
+		return nil, fmt.Errorf("SlackAdapter の構築に失敗しました: %w", err)
 	}
 
 	appCtx := &app.Container{
@@ -74,11 +74,11 @@ func BuildContainer(ctx context.Context, cfg *config.Config) (container *app.Con
 func buildRemoteIO(storage remoteio.IOFactory) (*app.RemoteIO, error) {
 	w, err := storage.OutputWriter()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create output writer: %w", err)
+		return nil, fmt.Errorf("出力ライターの生成に失敗しました: %w", err)
 	}
 	s, err := storage.URLSigner()
 	if err != nil {
-		return nil, fmt.Errorf("failed to create URL signer: %w", err)
+		return nil, fmt.Errorf("URL署名器の生成に失敗しました: %w", err)
 	}
 	return &app.RemoteIO{
 		Factory: storage,
