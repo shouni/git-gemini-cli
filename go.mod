@@ -4,11 +4,11 @@ go 1.26
 
 require (
 	github.com/shouni/clibase v1.0.3
-	github.com/shouni/gemini-reviewer-core v1.7.12
-	github.com/shouni/go-http-kit v1.4.0
-	github.com/shouni/go-notifier v1.2.1
+	github.com/shouni/gemini-reviewer-core v1.7.14
+	github.com/shouni/go-http-kit v1.4.1
+	github.com/shouni/go-notifier v1.2.2
 	github.com/shouni/go-prompt-kit v1.0.4
-	github.com/shouni/go-remote-io v1.3.2
+	github.com/shouni/go-remote-io v1.3.3
 	github.com/shouni/go-utils v1.0.20
 	github.com/spf13/cobra v1.10.2
 )
@@ -51,7 +51,7 @@ require (
 	github.com/forPelevin/gomoji v1.4.1 // indirect
 	github.com/go-git/gcfg v1.5.1-0.20230307220236-3a3c6141e376 // indirect
 	github.com/go-git/go-billy/v5 v5.8.0 // indirect
-	github.com/go-git/go-git/v5 v5.17.2 // indirect
+	github.com/go-git/go-git/v5 v5.18.0 // indirect
 	github.com/go-jose/go-jose/v4 v4.1.3 // indirect
 	github.com/go-logr/logr v1.4.3 // indirect
 	github.com/go-logr/stdr v1.2.2 // indirect
@@ -69,10 +69,10 @@ require (
 	github.com/planetscale/vtprotobuf v0.6.1-0.20240319094008-0393e58bdf10 // indirect
 	github.com/rivo/uniseg v0.4.7 // indirect
 	github.com/sergi/go-diff v1.3.2-0.20230802210424-5b0b94c5c0d3 // indirect
-	github.com/shouni/go-gemini-client v1.2.4 // indirect
-	github.com/shouni/netarmor v1.0.2 // indirect
+	github.com/shouni/go-gemini-client v1.2.8 // indirect
+	github.com/shouni/netarmor v1.0.3 // indirect
 	github.com/skeema/knownhosts v1.3.1 // indirect
-	github.com/slack-go/slack v0.19.0 // indirect
+	github.com/slack-go/slack v0.23.0 // indirect
 	github.com/spf13/pflag v1.0.10 // indirect
 	github.com/spiffe/go-spiffe/v2 v2.6.0 // indirect
 	github.com/xanzy/ssh-agent v0.3.3 // indirect
@@ -94,7 +94,7 @@ require (
 	golang.org/x/text v0.36.0 // indirect
 	golang.org/x/time v0.15.0 // indirect
 	google.golang.org/api v0.273.0 // indirect
-	google.golang.org/genai v1.53.0 // indirect
+	google.golang.org/genai v1.55.0 // indirect
 	google.golang.org/genproto v0.0.0-20260316180232-0b37fe3546d5 // indirect
 	google.golang.org/genproto/googleapis/api v0.0.0-20260316180232-0b37fe3546d5 // indirect
 	google.golang.org/genproto/googleapis/rpc v0.0.0-20260319201613-d00831a3d3e7 // indirect
