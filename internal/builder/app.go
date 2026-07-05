@@ -1,3 +1,5 @@
+// Package builder は、設定値から各サービスクライアント・パイプラインの
+// 依存関係を組み立てるファクトリ関数を提供します。
 package builder
 
 import (
@@ -5,9 +7,9 @@ import (
 	"fmt"
 	"io"
 
-	"git-gemini-cli/internal/adapters"
-	"git-gemini-cli/internal/app"
-	"git-gemini-cli/internal/config"
+	"github.com/shouni/git-gemini-cli/internal/adapters"
+	"github.com/shouni/git-gemini-cli/internal/app"
+	"github.com/shouni/git-gemini-cli/internal/config"
 
 	"github.com/shouni/go-http-kit/httpkit"
 	"github.com/shouni/go-remote-io/remoteio"

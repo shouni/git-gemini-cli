@@ -9,7 +9,7 @@ import (
 
 	"github.com/shouni/go-http-kit/httpkit"
 	"github.com/shouni/go-notifier/pkg/slack"
-	"github.com/shouni/go-utils/urlpath"
+	"github.com/shouni/go-utils/giturl"
 
 	"github.com/shouni/gemini-reviewer-core/ports"
 )
@@ -33,7 +33,7 @@ func NewSlackAdapter(httpClient httpkit.Requester, webhookURL string) (*SlackAda
 
 	client, err := slack.NewClient(httpClient, webhookURL)
 	if err != nil {
-		return nil, fmt.Errorf("Slackクライアントの初期化に失敗しました: %w", err)
+		return nil, fmt.Errorf("slackクライアントの初期化に失敗しました: %w", err)
 	}
 
 	return &SlackAdapter{
@@ -69,7 +69,7 @@ func (s *SlackAdapter) Notify(ctx context.Context, outcome ports.ReviewProcessOu
 // buildSlackContent は投稿メッセージの本文を組み立てます。
 // publicURLをメッセージ内のリンク先URL、storageURIをそのリンクの表示テキストとして使用します。
 func (s *SlackAdapter) buildSlackContent(req ports.ReviewRequest) string {
-	repoPath := urlpath.GetRepositoryPath(req.RepoURL)
+	repoPath := giturl.GetRepositoryPath(req.RepoURL)
 	content := fmt.Sprintf(
 		"*詳細URL:* <%s|%s>\n"+
 			"*リポジトリ:* `%s`\n"+

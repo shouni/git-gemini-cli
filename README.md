@@ -1,10 +1,10 @@
 # 🤖 Git Gemini CLI
 
+[![CI](https://github.com/shouni/git-gemini-cli/actions/workflows/ci.yml/badge.svg)](https://github.com/shouni/git-gemini-cli/actions/workflows/ci.yml)
 [![Language](https://img.shields.io/badge/Language-Go-blue)](https://golang.org/)
 [![Go Version](https://img.shields.io/github/go-mod/go-version/shouni/git-gemini-cli)](https://golang.org/)
 [![GitHub tag (latest by date)](https://img.shields.io/github/v/tag/shouni/git-gemini-cli)](https://github.com/shouni/git-gemini-cli/tags)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Go Report Card](https://goreportcard.com/badge/github.com/shouni/git-gemini-cli)](https://goreportcard.com/report/github.com/shouni/git-gemini-cli)
 [![Status](https://img.shields.io/badge/Status-Completed-brightgreen)](#)
 
 ## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
