@@ -7,7 +7,7 @@ import (
 	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/spf13/cobra"
 
-	"git-gemini-cli/internal/builder"
+	"github.com/shouni/git-gemini-cli/internal/builder"
 )
 
 // reviewCmd は 'review' サブコマンドを定義します。
@@ -25,7 +25,7 @@ var reviewCmd = &cobra.Command{
 
 // reviewCommand は、リモートリポジトリのブランチ比較を Gemini AI に依頼し、
 // 結果を標準出力に出力する generic コマンドの実行ロジックです。
-func reviewCommand(cmd *cobra.Command, args []string) error {
+func reviewCommand(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
 	appCtx, err := builder.BuildContainer(ctx, &opts)

@@ -1,4 +1,4 @@
-module git-gemini-cli
+module github.com/shouni/git-gemini-cli
 
 go 1.26
 

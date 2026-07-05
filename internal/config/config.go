@@ -1,3 +1,4 @@
+// Package config は、環境変数とCLIフラグからアプリケーション設定を読み込み・検証します。
 package config
 
 import (
@@ -8,7 +9,9 @@ import (
 )
 
 const (
-	DefaultHTTPTimeout  = 30 * time.Second
+	// DefaultHTTPTimeout は外部HTTP通信のデフォルトタイムアウトです。
+	DefaultHTTPTimeout = 30 * time.Second
+	// SignedURLExpiration は公開成果物の署名付きURLの有効期限です。
 	SignedURLExpiration = 30 * time.Minute
 )
 

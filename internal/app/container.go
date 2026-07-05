@@ -1,3 +1,4 @@
+// Package app は、アプリケーションの依存関係を組み立てて保持する DI コンテナを提供します。
 package app
 
 import (
@@ -7,8 +8,8 @@ import (
 	"github.com/shouni/go-http-kit/httpkit"
 	"github.com/shouni/go-remote-io/remoteio"
 
-	"git-gemini-cli/internal/config"
-	"git-gemini-cli/internal/domain"
+	"github.com/shouni/git-gemini-cli/internal/config"
+	"github.com/shouni/git-gemini-cli/internal/domain"
 )
 
 // Container はアプリケーションの依存関係（DIコンテナ）を保持します。

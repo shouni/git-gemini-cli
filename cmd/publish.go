@@ -8,11 +8,11 @@ import (
 
 	"github.com/shouni/gemini-reviewer-core/ports"
 	"github.com/shouni/go-remote-io/remoteio"
-	"github.com/shouni/go-utils/urlpath"
+	"github.com/shouni/go-utils/giturl"
 	"github.com/spf13/cobra"
 
-	"git-gemini-cli/internal/builder"
-	"git-gemini-cli/internal/config"
+	"github.com/shouni/git-gemini-cli/internal/builder"
+	"github.com/shouni/git-gemini-cli/internal/config"
 )
 
 // publishCmd は 'publish' サブコマンドを定義します。
@@ -26,7 +26,9 @@ var publishCmd = &cobra.Command{
 
 func init() {
 	publishCmd.Flags().StringVar(&opts.GCSBucket, "bucket", "", "保存先のGCSバケット名")
-	publishCmd.MarkFlagRequired("bucket")
+	if err := publishCmd.MarkFlagRequired("bucket"); err != nil {
+		panic(err)
+	}
 }
 
 // --------------------------------------------------------------------------
@@ -35,7 +37,7 @@ func init() {
 
 // publishCommand は、AIによるレビュー結果を生成し、指定されたURIのクラウドストレージに
 // 公開（アップロード）と通知を行う publish コマンドの実行ロジックです。
-func publishCommand(cmd *cobra.Command, args []string) error {
+func publishCommand(cmd *cobra.Command, _ []string) error {
 	ctx := cmd.Context()
 
 	appCtx, err := builder.BuildContainer(ctx, &opts)
@@ -49,7 +51,7 @@ func publishCommand(cmd *cobra.Command, args []string) error {
 
 	// 保存先 URI の決定
 	now := time.Now().Format("20060102_150405")
-	repoID := urlpath.GenerateGCSKeyName(opts.RepoURL)
+	repoID := giturl.GenerateGCSKeyName(opts.RepoURL)
 	safeBranchName := strings.ReplaceAll(opts.FeatureBranch, "/", "-")
 	path := fmt.Sprintf("reviews/%s/%s_%s.html", repoID, now, safeBranchName)
 	storageURI := remoteio.BuildGCSURI(opts.GCSBucket, path)

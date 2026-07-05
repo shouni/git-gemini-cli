@@ -5,9 +5,9 @@ import (
 
 	"github.com/shouni/gemini-reviewer-core/git"
 	"github.com/shouni/gemini-reviewer-core/ports"
-	"github.com/shouni/go-utils/urlpath"
+	"github.com/shouni/go-utils/giturl"
 
-	"git-gemini-cli/internal/config"
+	"github.com/shouni/git-gemini-cli/internal/config"
 )
 
 // GitFactory は、ports.GitFactory インターフェースを満たす具象型です。
@@ -38,16 +38,16 @@ func (g *GitFactory) Create(repoURL, baseBranch string) ports.GitService {
 	}
 
 	if g.useExternalGit {
-		slog.Info("GitService: 外部Gitコマンド利用アダプタ (LocalGitAdapter/os/exec) を使用します。")
-		return git.NewGitLocalAdapter(localPath, g.sshKeyPath, opts...)
+		slog.Info("GitService: 外部Gitコマンド利用アダプタ (LocalAdapter/os/exec) を使用します。")
+		return git.NewLocalAdapter(localPath, g.sshKeyPath, opts...)
 	}
 
 	slog.Info("GitService: コアライブラリのアダプタ (go-git) を使用します。")
-	return git.NewGitAdapter(localPath, g.sshKeyPath, opts...)
+	return git.NewAdapter(localPath, g.sshKeyPath, opts...)
 }
 
 // generateLocalPath はリポジトリURLからユニークなローカルパスを生成します。
 func (g *GitFactory) generateLocalPath(repoURL string) string {
 	const baseRepoDirName = "reviewer-repos"
-	return urlpath.SanitizeURLToUniquePath(repoURL, baseRepoDirName)
+	return giturl.SanitizeURLToUniquePath(repoURL, baseRepoDirName)
 }

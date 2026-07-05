@@ -1,3 +1,4 @@
+// Package cmd は、git-gemini-cli の review/publish サブコマンドを定義します。
 package cmd
 
 import (
@@ -8,7 +9,7 @@ import (
 	"github.com/shouni/clibase"
 	"github.com/spf13/cobra"
 
-	"git-gemini-cli/internal/config"
+	"github.com/shouni/git-gemini-cli/internal/config"
 )
 
 // opts は、レビュー実行のパラメータです
@@ -28,7 +29,7 @@ func Execute() {
 }
 
 // initAppPreRunE は、コマンド実行前にログ設定やクライアント初期化を行います。
-func initAppPreRunE(cmd *cobra.Command, args []string) error {
+func initAppPreRunE(_ *cobra.Command, _ []string) error {
 	opts.FillDefaults(config.LoadConfig())
 	opts.Normalize()
 

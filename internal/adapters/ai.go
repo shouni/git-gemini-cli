@@ -1,10 +1,12 @@
+// Package adapters は、Gemini/Slack クライアントの初期化と、
+// gemini-reviewer-core のポート実装を提供します。
 package adapters
 
 import (
 	"context"
 	"fmt"
 
-	"git-gemini-cli/internal/config"
+	"github.com/shouni/git-gemini-cli/internal/config"
 
 	"github.com/shouni/gemini-reviewer-core/ai"
 	"github.com/shouni/gemini-reviewer-core/ports"
