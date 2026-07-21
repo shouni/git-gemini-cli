@@ -4,7 +4,7 @@ go 1.26
 
 require (
 	github.com/shouni/clibase v1.0.4
-	github.com/shouni/gemini-reviewer-core v1.10.2
+	github.com/shouni/gemini-reviewer-core v1.10.4
 	github.com/shouni/go-http-kit v1.6.0
 	github.com/shouni/go-notifier v1.3.0
 	github.com/shouni/go-prompt-kit v1.2.0

@@ -11,7 +11,9 @@
 
 **Git Gemini CLI** は、**[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用した、コマンドラインから使えるAIレビューツールです。
 
-[`git-gemini-web`](https://github.com/shouni/git-gemini-web)と同じくGitリポジトリのブランチ間差分をAIでレビューしますが、こちらはWebフォームを介さず、ローカルのターミナルから直接実行する用途向けです。用途もgit-gemini-webと同様、コードに限らず記事や小説の原稿レビューにも使っています。
+[`git-gemini-web`](https://github.com/shouni/git-gemini-web)と同じくGitリポジトリのブランチ間差分をAIでレビューしますが、こちらはWebフォームを介さず、ローカルのターミナルから直接実行する用途向けです。
+
+用途もgit-gemini-webと同様、コードに限らず記事や小説の原稿レビューにも使っています。
 
 ---
 
@@ -73,6 +75,8 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 | **`article`** | **[`assets/prompts/article.md`](assets/prompts/article.md)** | **技術記事・ドキュメントの品質レビュー**。読者にとっての価値、技術的正確性、読みやすさに焦点を当てます。 |
 | **`code`** | **[`assets/prompts/code.md`](assets/prompts/code.md)** | **コード品質と保守性の向上**を目的とした詳細なレビュー。可読性、重複、命名規則、一般的なベストプラクティスからの逸脱など、広範囲な技術的側面に焦点を当てます。 |
 | **`novel`** | **[`assets/prompts/novel.md`](assets/prompts/novel.md)** | **小説原稿の完成度向上**を目的としたレビュー。整合性、人物描写、テンポ、Show, Don't Tellの観点に焦点を当てます。 |
+
+上記以外の値を指定した場合、Git操作を行う前にエラーで終了します。
 
 ---
 

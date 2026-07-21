@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"github.com/shouni/clibase"
 	"github.com/spf13/cobra"
 
+	"github.com/shouni/git-gemini-cli/assets"
 	"github.com/shouni/git-gemini-cli/internal/config"
 )
 
@@ -32,6 +34,10 @@ func Execute() {
 func initAppPreRunE(_ *cobra.Command, _ []string) error {
 	opts.FillDefaults(config.LoadConfig())
 	opts.Normalize()
+
+	if !assets.IsValidMode(opts.ReviewMode) {
+		return fmt.Errorf("不正な --mode 値です: %q ('article', 'code', 'novel' のいずれかを指定してください)", opts.ReviewMode)
+	}
 
 	logLevel := slog.LevelInfo
 	if clibase.GetConfig().Verbose {
