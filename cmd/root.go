@@ -2,6 +2,7 @@
 package cmd
 
 import (
+	"fmt"
 	"log/slog"
 	"os"
 	"path/filepath"
@@ -9,6 +10,7 @@ import (
 	"github.com/shouni/clibase"
 	"github.com/spf13/cobra"
 
+	"github.com/shouni/git-gemini-cli/assets"
 	"github.com/shouni/git-gemini-cli/internal/config"
 )
 
@@ -33,6 +35,10 @@ func initAppPreRunE(_ *cobra.Command, _ []string) error {
 	opts.FillDefaults(config.LoadConfig())
 	opts.Normalize()
 
+	if !assets.IsValidMode(opts.ReviewMode) {
+		return fmt.Errorf("不正な --mode 値です: %q ('article', 'code', 'novel' のいずれかを指定してください)", opts.ReviewMode)
+	}
+
 	logLevel := slog.LevelInfo
 	if clibase.GetConfig().Verbose {
 		logLevel = slog.LevelDebug
@@ -49,7 +55,7 @@ func initAppPreRunE(_ *cobra.Command, _ []string) error {
 func addAppPersistentFlags(rootCmd *cobra.Command) {
 	defaultSSHKeyPath := getDefaultSSHKeyPath()
 
-	rootCmd.PersistentFlags().StringVarP(&opts.ReviewMode, "mode", "m", "detail", "レビューモードを指定: 'release' または 'detail'")
+	rootCmd.PersistentFlags().StringVarP(&opts.ReviewMode, "mode", "m", "code", "レビューモードを指定: 'article', 'code', または 'novel'")
 	rootCmd.PersistentFlags().StringVarP(&opts.RepoURL, "repo-url", "u", "", "レビュー対象の Git リポジトリの SSH URL。")
 	rootCmd.PersistentFlags().StringVarP(&opts.BaseBranch, "base-branch", "b", "main", "差分比較の基準ブランチ。")
 	rootCmd.PersistentFlags().StringVarP(&opts.FeatureBranch, "feature-branch", "f", "", "レビュー対象のフィーチャーブランチ。")
