@@ -7,9 +7,11 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![Status](https://img.shields.io/badge/Status-Completed-brightgreen)](#)
 
-## 🚀 概要 (About) - 開発効率をブーストする、軽量AIレビューCLI
+## 🚀 概要 (About)
 
-**Git Gemini CLI** は、AIコードレビューの**コアエンジン**を提供する **[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用し、その機能をコマンドラインインターフェース（CLI）として実行可能にしたアプリケーションです。
+**Git Gemini CLI** は、**[Gemini Reviewer Core](https://github.com/shouni/gemini-reviewer-core)** を利用した、コマンドラインから使えるAIレビューツールです。
+
+[`git-gemini-web`](https://github.com/shouni/git-gemini-web)と同じくGitリポジトリのブランチ間差分をAIでレビューしますが、こちらはWebフォームを介さず、ローカルのターミナルから直接実行する用途向けです。用途もgit-gemini-webと同様、コードに限らず記事や小説の原稿レビューにも使っています。
 
 ---
 
@@ -25,8 +27,8 @@
 
 ## 🔄 実行ワークフロー (Execution Workflow)
 
-* **分析フェーズ**: 指定されたブランチ間の差分（Diff）を取得し、`gemini-reviewer-core` を用いて AI によるコードレビューを実施します。
-* **出力フェーズ**: レビュー結果（Markdown）を HTML に変換し、指定されたストレージ（ローカルまたは GCS）へ保存します。
+* **分析フェーズ**: 指定されたブランチ間の差分（Diff）を取得し、`gemini-reviewer-core` を用いて AI によるレビューを実施します(構造化出力のJSONで安定した結果を返します)。
+* **出力フェーズ**: `publish` コマンドの場合、レビュー結果のJSONをHTMLに変換し、指定されたストレージ（GCS等）へ保存します。
 * **通知フェーズ**: 公開準備が整い次第、Slack 等の外部サービスへレビュー完了レポートを即座に通知します。
 
 ---
@@ -62,14 +64,15 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 ---
 
-## 🤖 プロンプト設定とAIコードレビューの種類 (`--mode` オプション)
+## 🤖 プロンプト設定とレビューの種類 (`--mode` オプション)
 
 本ツールは、レビューの目的に応じて AI に与える指示（**プロンプト**）を切り替えることができます。これは共通フラグの **`-m`, `--mode`** で指定します。
 
 | モード (`-m`) | プロンプトファイル | 目的とレビュー観点 |
 | :--- | :--- | :--- |
-| **`detail`** | **[`assets/prompts/prompt_detail.md`](assets/prompts/prompt_detail.md)** | **コード品質と保守性の向上**を目的とした詳細なレビュー。可読性、重複、命名規則、一般的なベストプラクティスからの逸脱など、広範囲な技術的側面に焦点を当てます。 |
-| **`release`** | **[`assets/prompts/prompt_release.md`](assets/prompts/prompt_release.md)** | **本番リリース可否の判定**を目的としたクリティカルなレビュー。致命的なバグ、セキュリティ脆弱性、サーバーダウンにつながる重大なパフォーマンス問題など、リリースをブロックする問題に限定して指摘します。 |
+| **`article`** | **[`assets/prompts/article.md`](assets/prompts/article.md)** | **技術記事・ドキュメントの品質レビュー**。読者にとっての価値、技術的正確性、読みやすさに焦点を当てます。 |
+| **`code`** | **[`assets/prompts/code.md`](assets/prompts/code.md)** | **コード品質と保守性の向上**を目的とした詳細なレビュー。可読性、重複、命名規則、一般的なベストプラクティスからの逸脱など、広範囲な技術的側面に焦点を当てます。 |
+| **`novel`** | **[`assets/prompts/novel.md`](assets/prompts/novel.md)** | **小説原稿の完成度向上**を目的としたレビュー。整合性、人物描写、テンポ、Show, Don't Tellの観点に焦点を当てます。 |
 
 ---
 
@@ -83,7 +86,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 
 | フラグ | ショートカット | 説明 | デフォルト値 | 必須 |
 | :--- | :--- | :--- | :--- | :--- |
-| `--mode` | **`-m`** | レビューモードを指定: `'release'` (リリース判定) または `'detail'` (詳細レビュー) | `detail` | ❌ |
+| `--mode` | **`-m`** | レビューモードを指定: `'article'`, `'code'`, または `'novel'` | `code` | ❌ |
 | `--repo-url` | **`-u`** | レビュー対象の Git リポジトリの **SSH URL** | **なし** | ✅ |
 | `--base-branch` | **`-b`** | 基準となる**ブランチ名またはハッシュ** | `main` | ❌ |
 | `--feature-branch` | **`-f`** | レビュー対象の**ブランチ名またはハッシュ** | **なし** | ✅ |
@@ -101,9 +104,9 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 #### 実行コマンド例
 
 ```bash
-# main と develop の差分をリリース判定モードで実行
+# main と develop の差分をコードレビューモードで実行
 ./bin/git_gemini_cli review \
-  -m "release" \
+  -m "code" \
   --repo-url "git@github.com:user/my-awesome-project.git" \
   --base-branch "main" \
   --feature-branch "develop"
@@ -123,7 +126,7 @@ export SLACK_WEBHOOK_URL="https://hooks.slack.com/services/..."
 ```bash
 # feature/publish の差分をレビューし、GCSにHTML結果を保存
 ./bin/git_gemini_cli publish \
-  -m "detail" \
+  -m "novel" \
   --repo-url "git@github.com:user/my-awesome-project.git" \
   --base-branch "main" \
   --feature-branch "feature/publish" \

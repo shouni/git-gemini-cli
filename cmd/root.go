@@ -49,7 +49,7 @@ func initAppPreRunE(_ *cobra.Command, _ []string) error {
 func addAppPersistentFlags(rootCmd *cobra.Command) {
 	defaultSSHKeyPath := getDefaultSSHKeyPath()
 
-	rootCmd.PersistentFlags().StringVarP(&opts.ReviewMode, "mode", "m", "detail", "レビューモードを指定: 'release' または 'detail'")
+	rootCmd.PersistentFlags().StringVarP(&opts.ReviewMode, "mode", "m", "code", "レビューモードを指定: 'article', 'code', または 'novel'")
 	rootCmd.PersistentFlags().StringVarP(&opts.RepoURL, "repo-url", "u", "", "レビュー対象の Git リポジトリの SSH URL。")
 	rootCmd.PersistentFlags().StringVarP(&opts.BaseBranch, "base-branch", "b", "main", "差分比較の基準ブランチ。")
 	rootCmd.PersistentFlags().StringVarP(&opts.FeatureBranch, "feature-branch", "f", "", "レビュー対象のフィーチャーブランチ。")

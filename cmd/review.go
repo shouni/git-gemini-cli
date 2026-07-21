@@ -53,9 +53,14 @@ func reviewCommand(cmd *cobra.Command, _ []string) error {
 	}
 
 	// 2. レビュー結果の出力
-	// ReviewMarkdown が空でない場合にのみ標準出力に出力する
-	if outcome.ReviewMarkdown != "" {
-		printReviewResult(outcome.ReviewMarkdown)
+	// ReviewContent が空でない場合にのみ標準出力に出力する
+	if outcome.ReviewContent != "" {
+		formatted, err := formatReviewOutput(outcome.ReviewContent)
+		if err != nil {
+			slog.WarnContext(ctx, "レビュー結果の整形に失敗したため、生データを出力します", "error", err)
+			formatted = outcome.ReviewContent
+		}
+		printReviewResult(formatted)
 		slog.Info("レビュー結果を標準出力に出力しました。")
 	} else if outcome.IsSkipped {
 		slog.Info("差分がないため、レビュー出力はスキップされました。")
